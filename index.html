@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>WhatsApp Order System - Mobile Optimized</title>
+    <title>WhatsApp Order System - Mobile Optimized (Fixed Layout)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
@@ -25,22 +25,21 @@
     </script>
 
     <style>
-        /* ---------- Layout fixes ---------- */
+        /* ---------- Layout fixes: Fixed Viewport Height and Overflow Control ---------- */
         html, body {
             margin: 0;
             padding: 0;
-            height: 100%;
+            height: 100vh; /* 100% of viewport height */
             width: 100%;
-            /* KEEP overflow:hidden so page does NOT scroll - chat window will handle internal scrolling */
-            overflow: hidden;
+            overflow: hidden; /* Prevents scrolling on the entire page */
             box-sizing: border-box;
             font-family: 'Inter', sans-serif;
             background-color: #DADBD3;
         }
 
-        /* Keep #app full viewport height so header + messages + input always visible */
+        /* Keep #app centered on large screens, and ensure it uses the full fixed height */
         #app {
-            height: 100vh;
+            height: 100vh; /* Ensures it matches body height */
             width: 100%;
             display: flex;
             flex-direction: column;
@@ -48,7 +47,7 @@
 
         /* Chat window uses full height and vertical flow */
         #chat-window {
-            flex: 1 1 auto;
+            flex: 1;
             display: flex;
             flex-direction: column;
             background: white;
@@ -67,7 +66,7 @@
             #message-input { font-size: 16px; }
         }
 
-        /* Header: sticky at top of chat-window */
+        /* Header: make it sticky at top of chat-window and remove manual margin hacks */
         #chat-header {
             padding: 12px 12px;
             background: #075E54;
@@ -79,21 +78,16 @@
             top: 0;
             z-index: 30;
             box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-            flex-shrink: 0;
         }
 
-        /* Messages container - fills available space between header and input, scrolls internally */
+        /* Messages container - THIS is the only scrollable area */
         #messages-container {
-            flex: 1 1 auto;
+            flex: 1;
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch; /* smooth scrolling on mobile */
             background-color: #E5DDD5;
-            padding: 16px; /* safe spacing from header and screen edges */
+            padding: 16px;
             min-height: 0; /* important for flex children to allow scrolling */
         }
-
-        /* Ensure new messages are visible and container doesn't expand the page */
-        #messages-column { display:flex; flex-direction:column; gap:6px; }
 
         /* Scrollbar styling (fine) */
         #messages-container::-webkit-scrollbar { width: 6px; }
@@ -101,7 +95,7 @@
         #messages-container::-webkit-scrollbar-track { background: transparent; }
 
         /* Message wrapper and bubble styles */
-        .message-wrapper { margin: 0; display:flex; }
+        .message-wrapper { margin: 6px 0; display:flex; }
         .message-bubble {
             padding: 12px 14px;
             border-radius: 12px;
@@ -140,7 +134,7 @@
         }
         .done-ordering-button { background-color:#25D366 !important; color:#fff !important; border-color:#075E54 !important; font-weight:700; }
 
-        /* input area - fixed at bottom of chat window so always visible */
+        /* input area */
         #input-bar {
             padding: 10px;
             background: #f5f5f5;
@@ -148,7 +142,7 @@
             align-items:center;
             gap:8px;
             border-top: 1px solid #e6e6e6;
-            flex-shrink: 0;
+            flex-shrink:0;
         }
         #message-input {
             flex:1;
@@ -162,7 +156,7 @@
         #send-button { width:44px; height:44px; border-radius:999px; display:flex; align-items:center; justify-content:center; }
         .preset-btn { white-space:nowrap; }
 
-        /* dialog small tweaks */
+        /* dialog small tweaks unchanged from your original but kept here */
         dialog { border: none; padding: 2rem; border-radius: 1.5rem; box-shadow: 0 15px 35px rgba(0,0,0,0.3); max-width: 90%; width: 450px; animation: fadeIn 0.3s ease-out; }
         @media (max-width: 767px) { dialog { width: calc(100% - 32px); margin: 16px; padding: 1.5rem; border-radius: 1rem; } }
         dialog::backdrop { background: rgba(0,0,0,0.6); }
@@ -174,7 +168,8 @@
     </style>
 </head>
 <body>
-    <div id="app" class="w-full md:max-w-3xl md:rounded-xl overflow-hidden">
+    <!-- Added h-screen class (Tailwind for height: 100vh) to match the CSS fix -->
+    <div id="app" class="w-full h-screen md:max-w-3xl md:rounded-xl overflow-hidden">
         <div id="chat-window" class="flex-grow w-full flex flex-col">
             <!-- Header (sticky) -->
             <div id="chat-header">
@@ -215,8 +210,8 @@
                 </div>
             </div>
 
-            <!-- Messages -->
-            <div id="messages-container" aria-live="polite">
+            <!-- Messages (This container scrolls internally) -->
+            <div id="messages-container">
                 <div id="messages-column" class="flex flex-col"></div>
             </div>
 
@@ -228,8 +223,8 @@
                 </button>
 
                 <input id="message-input" type="text" placeholder="Use buttons to select options"
-                      class="rounded-full border-none bg-white focus:outline-none focus:ring-2 focus:ring-whatsapp-dark transition-all duration-150"
-                      readonly>
+                       class="rounded-full border-none bg-white focus:outline-none focus:ring-2 focus:ring-whatsapp-dark transition-all duration-150"
+                       readonly>
 
                 <button id="send-button" onclick="sendMessage()"
                         class="flex-shrink-0 ml-2 bg-whatsapp-light hover:bg-whatsapp-dark text-white p-3 rounded-full transition duration-150 transform hover:scale-105 shadow-xl w-12 h-12 flex items-center justify-center">
@@ -246,7 +241,7 @@
     <dialog id="name-modal">
         <h2 class="text-2xl font-extrabold mb-4 text-whatsapp-dark">👤 Enter Your Name</h2>
         <input type="text" id="customer-name-input" placeholder="Your Full Name (e.g., Jane Doe)"
-              class="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-whatsapp-light focus:ring-1 focus:ring-whatsapp-light transition-all duration-150 shadow-inner">
+               class="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-whatsapp-light focus:ring-1 focus:ring-whatsapp-light transition-all duration-150 shadow-inner">
         <div class="flex justify-end space-x-3 mt-6">
             <button onclick="document.getElementById('name-modal').close()" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition duration-150 font-medium">Cancel</button>
             <button onclick="handleNameSubmit()" class="px-5 py-2 bg-whatsapp-light text-white rounded-full hover:bg-whatsapp-dark transition duration-150 shadow-md font-medium transform hover:scale-105">Submit</button>
@@ -256,7 +251,7 @@
     <dialog id="mobile-modal">
         <h2 class="text-2xl font-extrabold mb-4 text-whatsapp-dark">📞 Enter Mobile Number</h2>
         <input type="tel" id="customer-mobile-input" placeholder="10-digit Mobile Number" pattern="\d{10}" maxlength="10"
-              class="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-whatsapp-light focus:ring-1 focus:ring-whatsapp-light transition-all duration-150 shadow-inner">
+               class="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-whatsapp-light focus:ring-1 focus:ring-whatsapp-light transition-all duration-150 shadow-inner">
         <div class="flex justify-end space-x-3 mt-6">
             <button onclick="document.getElementById('mobile-modal').close()" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition duration-150 font-medium">Cancel</button>
             <button onclick="handleMobileSubmit()" class="px-5 py-2 bg-whatsapp-light text-white rounded-full hover:bg-whatsapp-dark transition duration-150 shadow-md font-medium transform hover:scale-105">Submit</button>
@@ -308,7 +303,7 @@
         let typingIndicatorElement = null;
         let tempSelectedItem = null;
 
-        // ---------- UTILITIES ----------
+        // ---------- UTILITIES (unchanged logic) ----------
         function toggleInputInteraction(isDisabled) {
             SEND_BUTTON.disabled = isDisabled;
             MESSAGE_INPUT.disabled = isDisabled;
@@ -428,9 +423,7 @@
             MESSAGES_COLUMN.appendChild(wrapper);
 
             // Scroll messages container to bottom (robust)
-            requestAnimationFrame(()=> {
-                MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
-            });
+            MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
         }
 
         function showTypingIndicator() {
@@ -452,9 +445,7 @@
             wrapper.appendChild(bubble);
             MESSAGES_COLUMN.appendChild(wrapper);
             typingIndicatorElement = wrapper;
-            requestAnimationFrame(()=> {
-                MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
-            });
+            MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
         }
 
         function removeTypingIndicator() {
@@ -515,11 +506,11 @@
             }
         }
 
-        // ---------- Business logic (mostly unchanged) ----------
+        // ---------- Business logic (unchanged) ----------
         function getMenuText() {
             let menu = "नमस्ते! Welcome. Here is the current rate list:\n\n";
             MENU.forEach(item => { menu += `• ${item.name} - ${item.price} Rs/${item.unit}\n`; });
-            menu += `\nYou can add up to ${MAX_ITEMS} items to your order.`; 
+            menu += `\nYou can add up to ${MAX_ITEMS} items to your order.`;
             menu += "\nClick the *Select Items* button below to choose what you need.";
             return menu;
         }
