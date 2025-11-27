@@ -229,7 +229,7 @@
                 <!-- PRESET BUTTON: Shows 'Start Order' or 'Select Items' -->
                 <button id="preset-button" title="Quick Action"
                         class="preset-btn flex-shrink-0 p-2 text-sm font-semibold text-white bg-preset-bg hover:bg-black/80 rounded-full transition duration-150 shadow-md items-center justify-center h-10 transform hover:scale-[1.02] whitespace-nowrap">
-                    Select Items
+                    Start Order
                 </button>
 
                 <input id="message-input" type="text" placeholder="Use buttons to select options"
@@ -324,26 +324,28 @@
             if (keyboardStates.includes(currentState)) {
                 MESSAGE_INPUT.readOnly = false;
                 MESSAGE_INPUT.placeholder = "Type your response...";
+                // Hide preset button when keyboard input is active
+                PRESET_BUTTON.classList.add('hidden');
+                PRESET_BUTTON.classList.remove('flex');
+
             } else {
                 // Ensure input remains readOnly unless needed for keyboard entry
                 MESSAGE_INPUT.readOnly = true;
                 MESSAGE_INPUT.placeholder = "Use buttons to select options";
+                
+                // Show preset button when using quick select flow
+                const isMobile = window.innerWidth < 768;
+                const shouldShowPreset = isMobile || !isDisabled;
+            
+                if (shouldShowPreset) {
+                    PRESET_BUTTON.classList.remove('hidden');
+                    PRESET_BUTTON.classList.add('flex');
+                } else {
+                    PRESET_BUTTON.classList.add('hidden');
+                    PRESET_BUTTON.classList.remove('flex');
+                }
             }
 
-            const isMobile = window.innerWidth < 768;
-            const addressStates = [STATES.ASK_NAME, STATES.ASK_MOBILE, STATES.ASK_ADDRESS];
-            // Show Preset button unless we are selecting quantity or entering address details (where keyboard is required)
-            const shouldShowPreset = isMobile || (!isDisabled &&
-                currentState !== STATES.SELECTING_ITEM_QTY &&
-                !addressStates.includes(currentState));
-            
-            if (shouldShowPreset) {
-                PRESET_BUTTON.classList.remove('hidden');
-                PRESET_BUTTON.classList.add('flex');
-            } else {
-                PRESET_BUTTON.classList.add('hidden');
-                PRESET_BUTTON.classList.remove('flex');
-            }
 
             if (!isDisabled && !NAME_MODAL.open && !MOBILE_MODAL.open && keyboardStates.includes(currentState)) {
                 MESSAGE_INPUT.focus();
@@ -371,7 +373,6 @@
             let presetAction = "Start";
 
             PRESET_BUTTON.onclick = () => {
-                // In ORDERING state, the button acts as "Select Items" menu
                 if (currentState === STATES.ORDERING) handleSystemResponse("VIEW_MENU");
                 else usePreset(presetAction);
             };
@@ -390,9 +391,9 @@
                     presetAction = "VIEW_MENU";
                 }
             } else if (currentState === STATES.SELECTING_ITEM_QTY) {
-                // Hide or change button action when quantity is needed (input field takes over)
-                // For simplicity, we rely on toggleInputInteraction to hide it here.
-                toggleInputInteraction(false);
+                // Hide the preset button when quick replies for quantity are shown in the chat area
+                PRESET_BUTTON.classList.add('hidden');
+                PRESET_BUTTON.classList.remove('flex');
                 return;
             } else if (currentState === STATES.CONFIRMATION) {
                 presetText = "Place New Order"; presetAction = "Start New Order";
@@ -407,7 +408,6 @@
             if (message === 'Enter Address') { MESSAGE_INPUT.readOnly = false; MESSAGE_INPUT.focus(); DROPDOWN_MENU.classList.add('hidden'); return; }
 
             MESSAGE_INPUT.value = message;
-            // Removed the extra 'a' from the function name
             sendMessage(); 
             DROPDOWN_MENU.classList.add('hidden');
         }
@@ -541,7 +541,6 @@
             let menu = "नमस्ते! Welcome. Here is the current rate list:\n\n";
             MENU.forEach(item => { menu += `• ${item.name} - ${item.price} Rs/${item.unit}\n`; });
             menu += `\nYou can add up to ${MAX_ITEMS} items to your order.`;
-            // The quick reply button "Select Items" will appear at the bottom of this message
             menu += "\nClick the *Select Items* button below to choose what you need.";
             return menu;
         }
@@ -568,7 +567,8 @@
             const itemCount = orderData.orderItems.length;
             const remainingItems = MAX_ITEMS - itemCount;
 
-            if (itemCount < MAX_ITEMS) replies = MENU.map(i => i.name);
+            // In this state, we show the actual item names as quick replies in the chat bubble itself
+            if (itemCount < MAX_ITEMS) replies = MENU.map(i => i.name); 
             if (itemCount > 0) {
                 currentOrder = "🛒 Your current order:\n" + orderData.orderItems.map(i => `• ${i.quantity}${i.unit.includes('kg') ? 'kg' : 'L'} ${i.name}`).join('\n') + "\n\n";
             }
@@ -630,14 +630,18 @@
                     orderData = { orderItems: [], name: '', mobile: '', address: '' };
                     tempSelectedItem = null;
                     updateItemCounter();
-                    appendMessage(getMenuText(), false, ["Select Items"]); // Added "Select Items" as quick reply
+                    // Initial welcome message. We do NOT pass quick replies here, 
+                    // as the "Select Items" action is now handled by the PRESET_BUTTON.
+                    appendMessage(getMenuText(), false); 
                     updateState(STATES.ORDERING);
                     return;
                 }
                 if (input === 'Select Items' || input === 'VIEW_MENU') { showItemSelectionMenu(); return; }
                 if (input === 'Done Ordering') {
                     if (orderData.orderItems.length === 0) {
-                        appendMessage("Your order is empty. Please select items first.", false, ["Select Items"]);
+                        // If they press Done Ordering but cart is empty, redirect them to select items
+                        appendMessage("Your order is empty. Please select items first.", false);
+                        return;
                     } else {
                         let orderListText = "Order Summary so far:\n" + orderData.orderItems.map(i => `• ${i.quantity}${i.unit.includes('kg') ? 'kg' : 'L'} ${i.name}`).join('\n');
                         appendMessage(`Great! I recorded your order.\n\n${orderListText}\n\nNext, please type your full name into the input field or click the button below.`, false, ["Enter Name"]);
@@ -667,13 +671,12 @@
                 // State-specific logic
                 switch (currentState) {
                     case STATES.WELCOME:
-                        // This case is now handled by the global 'Start' command above
                         await handleSystemResponse('Start');
                         break;
 
                     case STATES.ORDERING: {
                         if (orderData.orderItems.length >= MAX_ITEMS) {
-                            appendMessage(`🛑 Order limit of ${MAX_ITEMS} items reached. Please click 'Done Ordering'.`, false, ["Done Ordering"]);
+                            appendMessage(`🛑 Order limit of ${MAX_ITEMS} items reached. Please click 'Done Ordering'.`, false);
                             break;
                         }
 
@@ -683,10 +686,12 @@
                             const itemDisplayName = selectedItem.name.split(' / ')[0].trim();
                             const unit = selectedItem.unit.includes('Litre') ? 'Litres' : 'Kgs';
                             const quantityPresets = selectedItem.isLiquid ? LIQUID_PRESETS : SOLID_PRESETS;
+                            // Show quantity quick replies in the chat bubble
                             appendMessage(`How many ${unit} of ${itemDisplayName}? Select quantity or type a custom amount.`, false, quantityPresets);
                             updateState(STATES.SELECTING_ITEM_QTY);
                         } else {
-                            appendMessage("Please use 'Select Items' button or 'Done Ordering' or select a listed item.", false, ["Select Items", "Done Ordering"].filter(r => r === "Done Ordering" ? orderData.orderItems.length > 0 : true));
+                            // If user types random text, show the main selection menu again
+                            showItemSelectionMenu();
                         }
                         break;
                     }
@@ -695,8 +700,8 @@
                         const quantity = parseFloat(input);
                         const selectedItemDetails = MENU.find(i => i.id === tempSelectedItem);
                         if (!selectedItemDetails) {
-                            appendMessage("Item selection lost. Please select an item again.", false, ["Select Items"]);
-                            updateState(STATES.ORDERING);
+                            appendMessage("Item selection lost. Please select an item again.", false);
+                            showItemSelectionMenu();
                             break;
                         }
 
@@ -717,12 +722,8 @@
                         tempSelectedItem = null;
                         updateItemCounter();
                         appendMessage(`Added ${quantity}${selectedItemDetails.unit} of ${selectedItemDetails.name.split(' / ')[0].trim()} to your order.`, false);
-
-                        if (orderData.orderItems.length >= MAX_ITEMS) {
-                            appendMessage(`You've reached the maximum of ${MAX_ITEMS} items.`, false, ["Done Ordering"]);
-                        } else {
-                            showItemSelectionMenu();
-                        }
+                        showItemSelectionMenu(); // Show the main menu or 'Done Ordering' options
+                        
                         break;
                     }
 
@@ -811,12 +812,9 @@
                 }
             });
 
-            // Start the application
+            // Set initial state for button and start conversation
             updateState(STATES.WELCOME);
-            // We call handleSystemResponse('Start') to trigger the welcome message and button visibility
             handleSystemResponse('Start'); 
-            // We call toggleInputInteraction(false) once to ensure initial input bar visibility
-            // The handleSystemResponse will call it again at the end, but this guarantees immediate visibility on load.
             toggleInputInteraction(false);
 
             window.onresize = () => toggleInputInteraction(SEND_BUTTON.disabled);
