@@ -23,6 +23,7 @@
             }
         }
     </script>
+
     <style>
         /* ---------- Layout fixes ---------- */
         html, body {
@@ -30,24 +31,28 @@
             padding: 0;
             height: 100%;
             width: 100%;
+            /* KEEP overflow:hidden so page does NOT scroll - chat window will handle internal scrolling */
+            overflow: hidden;
             box-sizing: border-box;
             font-family: 'Inter', sans-serif;
             background-color: #DADBD3;
         }
 
+        /* Keep #app full viewport height so header + messages + input always visible */
         #app {
-            min-height: 100vh;
+            height: 100vh;
             width: 100%;
             display: flex;
             flex-direction: column;
         }
 
+        /* Chat window uses full height and vertical flow */
         #chat-window {
-            flex: 1;
+            flex: 1 1 auto;
             display: flex;
             flex-direction: column;
             background: white;
-            min-height: 0;
+            min-height: 0; /* allows children to scroll correctly */
         }
 
         @media (min-width: 768px) {
@@ -58,15 +63,11 @@
                 margin: 20px auto;
                 box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             }
-            #chat-window { 
-                border-radius: 1rem; 
-            }
-            #message-input { 
-                font-size: 16px; 
-            }
+            #chat-window { border-radius: 1rem; }
+            #message-input { font-size: 16px; }
         }
 
-        /* Header: sticky at top */
+        /* Header: sticky at top of chat-window */
         #chat-header {
             padding: 12px 12px;
             background: #075E54;
@@ -81,32 +82,26 @@
             flex-shrink: 0;
         }
 
-        /* Messages container */
+        /* Messages container - fills available space between header and input, scrolls internally */
         #messages-container {
-            flex: 1;
+            flex: 1 1 auto;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* smooth scrolling on mobile */
             background-color: #E5DDD5;
-            padding: 16px;
-            min-height: 0;
+            padding: 16px; /* safe spacing from header and screen edges */
+            min-height: 0; /* important for flex children to allow scrolling */
         }
 
-        /* Scrollbar styling */
-        #messages-container::-webkit-scrollbar { 
-            width: 6px; 
-        }
-        #messages-container::-webkit-scrollbar-thumb { 
-            background-color: #a8a8a8; 
-            border-radius: 3px; 
-        }
-        #messages-container::-webkit-scrollbar-track { 
-            background: transparent; 
-        }
+        /* Ensure new messages are visible and container doesn't expand the page */
+        #messages-column { display:flex; flex-direction:column; gap:6px; }
+
+        /* Scrollbar styling (fine) */
+        #messages-container::-webkit-scrollbar { width: 6px; }
+        #messages-container::-webkit-scrollbar-thumb { background-color: #a8a8a8; border-radius: 3px; }
+        #messages-container::-webkit-scrollbar-track { background: transparent; }
 
         /* Message wrapper and bubble styles */
-        .message-wrapper { 
-            margin: 6px 0; 
-            display: flex; 
-        }
+        .message-wrapper { margin: 0; display:flex; }
         .message-bubble {
             padding: 12px 14px;
             border-radius: 12px;
@@ -116,19 +111,10 @@
             font-size: 15px;
             word-break: break-word;
         }
-        .sent { 
-            background: #DCF8C6; 
-            align-self: flex-end; 
-            border-bottom-right-radius: 4px; 
-            margin-left: auto;
-        }
-        .received { 
-            background: #fff; 
-            align-self: flex-start; 
-            border-top-left-radius: 4px; 
-        }
+        .sent { background: #DCF8C6; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .received { background: #fff; align-self: flex-start; border-top-left-radius: 4px; }
 
-        /* time / checkmark row */
+        /* time / checkmark row at the bottom of bubble */
         .bubble-meta {
             display: flex;
             justify-content: flex-end;
@@ -138,137 +124,56 @@
             color: #666;
             font-size: 11px;
         }
-        .bubble-meta svg { 
-            width: 14px; 
-            height: 14px; 
-        }
+        .bubble-meta svg { width: 14px; height: 14px; }
 
         /* quick replies */
-        .quick-reply-container { 
-            margin-top: 8px; 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 8px; 
-        }
+        .quick-reply-container { margin-top: 8px; display:flex; flex-wrap:wrap; gap:8px; }
         .quick-reply-button {
             padding: 8px 14px;
             border-radius: 20px;
             border: 1px solid #C4C4C4;
             background: #F8F8F8;
-            cursor: pointer;
-            font-weight: 500;
-            color: #128C7E;
-            white-space: nowrap;
-            transition: background-color 0.15s, transform 0.1s;
+            cursor:pointer;
+            font-weight:500;
+            color:#128C7E;
+            white-space:nowrap;
         }
-        .quick-reply-button:hover {
-            background-color: #E0E0E0;
-            transform: translateY(-1px);
-        }
-        .done-ordering-button { 
-            background-color: #25D366 !important; 
-            color: #fff !important; 
-            border-color: #075E54 !important; 
-            font-weight: 700; 
-        }
+        .done-ordering-button { background-color:#25D366 !important; color:#fff !important; border-color:#075E54 !important; font-weight:700; }
 
-        /* input area */
+        /* input area - fixed at bottom of chat window so always visible */
         #input-bar {
             padding: 10px;
             background: #f5f5f5;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            display:flex;
+            align-items:center;
+            gap:8px;
             border-top: 1px solid #e6e6e6;
             flex-shrink: 0;
         }
         #message-input {
-            flex: 1;
+            flex:1;
             padding: 12px 14px;
             border-radius: 999px;
-            border: none;
+            border:none;
             box-shadow: 0 6px 18px rgba(0,0,0,0.08);
             min-width: 0;
             background: #fff;
-            font-size: 1rem;
         }
-        #send-button { 
-            width: 44px; 
-            height: 44px; 
-            border-radius: 999px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-        }
-        .preset-btn { 
-            white-space: nowrap; 
-        }
+        #send-button { width:44px; height:44px; border-radius:999px; display:flex; align-items:center; justify-content:center; }
+        .preset-btn { white-space:nowrap; }
 
-        /* dialog styles */
-        dialog { 
-            border: none; 
-            padding: 2rem; 
-            border-radius: 1.5rem; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
-            max-width: 90%; 
-            width: 450px; 
-            animation: fadeIn 0.3s ease-out; 
-        }
-        @media (max-width: 767px) { 
-            dialog { 
-                width: calc(100% - 32px); 
-                margin: 16px; 
-                padding: 1.5rem; 
-                border-radius: 1rem; 
-            } 
-        }
-        dialog::backdrop { 
-            background: rgba(0,0,0,0.6); 
-        }
+        /* dialog small tweaks */
+        dialog { border: none; padding: 2rem; border-radius: 1.5rem; box-shadow: 0 15px 35px rgba(0,0,0,0.3); max-width: 90%; width: 450px; animation: fadeIn 0.3s ease-out; }
+        @media (max-width: 767px) { dialog { width: calc(100% - 32px); margin: 16px; padding: 1.5rem; border-radius: 1rem; } }
+        dialog::backdrop { background: rgba(0,0,0,0.6); }
 
-        /* dropdown menu */
-        #dropdown-menu {
-            position: absolute;
-            right: 0;
-            top: 100%;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            padding: 8px 0;
-            z-index: 1000;
-            min-width: 180px;
-        }
-        .dropdown-item {
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
-        .dropdown-item:hover {
-            background: #f5f5f5;
-        }
-
-        /* typing indicator */
-        .typing-dot { 
-            width: 8px; 
-            height: 8px; 
-            border-radius: 50%; 
-            background: #999; 
-            margin: 0 3px; 
-            animation: typing 1.4s infinite ease-in-out; 
-        }
-        .typing-dot:nth-child(1) { animation-delay: 0s; }
-        .typing-dot:nth-child(2) { animation-delay: .2s; }
-        .typing-dot:nth-child(3) { animation-delay: .4s; }
-        @keyframes typing { 
-            0%, 60%, 100% { transform: translateY(0); } 
-            30% { transform: translateY(-5px); } 
-        }
+        /* typing dot animation kept */
+        .typing-dot { width:8px; height:8px; border-radius:50%; background:#999; margin:0 3px; animation: typing 1.4s infinite ease-in-out; }
+        .typing-dot:nth-child(1){ animation-delay:0s } .typing-dot:nth-child(2){ animation-delay:.2s } .typing-dot:nth-child(3){ animation-delay:.4s }
+        @keyframes typing { 0%,60%,100%{ transform: translateY(0) } 30%{ transform: translateY(-5px) } }
     </style>
 </head>
-<body class="bg-[#DADBD3] font-sans">
-
+<body>
     <div id="app" class="w-full md:max-w-3xl md:rounded-xl overflow-hidden">
         <div id="chat-window" class="flex-grow w-full flex flex-col">
             <!-- Header (sticky) -->
@@ -311,14 +216,14 @@
             </div>
 
             <!-- Messages -->
-            <div id="messages-container">
+            <div id="messages-container" aria-live="polite">
                 <div id="messages-column" class="flex flex-col"></div>
             </div>
 
             <!-- Input Bar -->
             <div id="input-bar">
                 <button id="preset-button" title="Quick Action"
-                        class="preset-btn flex-shrink-0 p-2 text-sm font-semibold text-white bg-preset-bg hover:bg-black/80 rounded-full transition duration-150 shadow-md items-center justify-center h-10 transform hover:scale-[1.02]">
+                        class="preset-btn flex-shrink-0 p-2 text-sm font-semibold text-white bg-preset-bg hover:bg-black/80 rounded-full transition duration-150 shadow-md items-center justify-center h-10 transform hover:scale-[1.02] whitespace-nowrap">
                     Select Items
                 </button>
 
@@ -327,7 +232,7 @@
                       readonly>
 
                 <button id="send-button" onclick="sendMessage()"
-                        class="flex-shrink-0 bg-whatsapp-light hover:bg-whatsapp-dark text-white rounded-full transition duration-150 transform hover:scale-105 shadow-xl flex items-center justify-center">
+                        class="flex-shrink-0 ml-2 bg-whatsapp-light hover:bg-whatsapp-dark text-white p-3 rounded-full transition duration-150 transform hover:scale-105 shadow-xl w-12 h-12 flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transform -rotate-45 ml-1">
                         <line x1="22" y1="2" x2="11" y2="13"></line>
                         <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -372,15 +277,15 @@
     </dialog>
 
     <script>
-        // CONFIG
+        // ---------- Config (unchanged) ----------
         const WEBHOOK_URL = "https://borsekaushal.app.n8n.cloud/webhook/order-system-webhook";
         const REQUEST_TIMEOUT_MS = 25000;
         const SECRET_HEADER_VALUE = "";
         const MAX_ITEMS = 5;
 
-        // References will be set after DOM loads
+        // DOM refs (set later)
         let MESSAGES_COLUMN;
-        let MESSAGES_CONTAINER;
+        let MESSAGES_CONTAINER; // the scrollable container
         let MESSAGE_INPUT, SEND_BUTTON, PRESET_BUTTON, BOT_STATUS, NAME_MODAL, CUSTOMER_NAME_INPUT, MOBILE_MODAL, CUSTOMER_MOBILE_INPUT, ITEM_COUNTER;
         let MENU_BUTTON, DROPDOWN_MENU;
 
@@ -388,17 +293,7 @@
         const USER_ID = 'User_' + Math.random().toString(36).substring(2,9);
         const LIQUID_PRESETS = ["1","2","5","10"];
         const SOLID_PRESETS = ["0.5","1","2","5","10"];
-
-        const STATES = {
-            WELCOME: 'WELCOME',
-            ORDERING: 'ORDERING',
-            SELECTING_ITEM_QTY: 'SELECTING_ITEM_QTY',
-            ASK_NAME: 'ASK_NAME',
-            ASK_MOBILE: 'ASK_MOBILE',
-            ASK_ADDRESS: 'ASK_ADDRESS',
-            CONFIRMATION: 'CONFIRMATION'
-        };
-
+        const STATES = { WELCOME:'WELCOME', ORDERING:'ORDERING', SELECTING_ITEM_QTY:'SELECTING_ITEM_QTY', ASK_NAME:'ASK_NAME', ASK_MOBILE:'ASK_MOBILE', ASK_ADDRESS:'ASK_ADDRESS', CONFIRMATION:'CONFIRMATION' };
         let currentState = STATES.WELCOME;
         let orderData = { orderItems: [], name: '', mobile: '', address: '' };
         const MENU = [
@@ -419,26 +314,21 @@
             MESSAGE_INPUT.disabled = isDisabled;
             MESSAGE_INPUT.classList.toggle('opacity-60', isDisabled);
             SEND_BUTTON.classList.toggle('opacity-60', isDisabled);
-            
-            // Control keyboard activation based on state
+
             const keyboardStates = [STATES.ASK_NAME, STATES.ASK_MOBILE, STATES.ASK_ADDRESS];
             if (keyboardStates.includes(currentState)) {
-                // Enable keyboard for name, mobile, and address states
                 MESSAGE_INPUT.readOnly = false;
                 MESSAGE_INPUT.placeholder = "Type your response...";
             } else {
-                // Disable keyboard for other states
                 MESSAGE_INPUT.readOnly = true;
                 MESSAGE_INPUT.placeholder = "Use buttons to select options";
             }
-            
-            // Always show preset button on mobile, conditionally on desktop
+
             const isMobile = window.innerWidth < 768;
             const addressStates = [STATES.ASK_NAME, STATES.ASK_MOBILE, STATES.ASK_ADDRESS];
-            const shouldShowPreset = isMobile || (!isDisabled && 
+            const shouldShowPreset = isMobile || (!isDisabled &&
                 currentState !== STATES.SELECTING_ITEM_QTY &&
                 !addressStates.includes(currentState));
-
             if (shouldShowPreset) {
                 PRESET_BUTTON.classList.remove('hidden');
                 PRESET_BUTTON.classList.add('flex');
@@ -446,22 +336,19 @@
                 PRESET_BUTTON.classList.add('hidden');
                 PRESET_BUTTON.classList.remove('flex');
             }
-            
-            if (!isDisabled && !NAME_MODAL.open && !MOBILE_MODAL.open && keyboardStates.includes(currentState)) { 
-                MESSAGE_INPUT.focus(); 
+
+            if (!isDisabled && !NAME_MODAL.open && !MOBILE_MODAL.open && keyboardStates.includes(currentState)) {
+                MESSAGE_INPUT.focus();
             }
         }
-        
+
         function updateItemCounter() {
             const itemCount = orderData.orderItems.length;
             ITEM_COUNTER.textContent = `Items: ${itemCount}/${MAX_ITEMS}`;
-            
+
             ITEM_COUNTER.classList.remove('text-red-300', 'text-yellow-300');
-            if (itemCount >= MAX_ITEMS) {
-                ITEM_COUNTER.classList.add('text-red-300');
-            } else if (itemCount >= MAX_ITEMS - 1) {
-                ITEM_COUNTER.classList.add('text-yellow-300');
-            }
+            if (itemCount >= MAX_ITEMS) ITEM_COUNTER.classList.add('text-red-300');
+            else if (itemCount >= MAX_ITEMS - 1) ITEM_COUNTER.classList.add('text-yellow-300');
         }
 
         function updateState(newState) {
@@ -480,46 +367,28 @@
                 else usePreset(presetAction);
             };
 
-            if (currentState === STATES.WELCOME) {
-                presetText = "Start Order"; presetAction = "Start";
-            } else if (currentState === STATES.ORDERING) {
+            if (currentState === STATES.WELCOME) { presetText = "Start Order"; presetAction = "Start"; }
+            else if (currentState === STATES.ORDERING) {
                 presetText = "Select Items";
                 if (orderData.orderItems.length >= MAX_ITEMS) { presetText = "Done Ordering"; }
             } else if (currentState === STATES.SELECTING_ITEM_QTY) {
-                toggleInputInteraction(false); 
-                return; 
-            } else if (currentState === STATES.CONFIRMATION) { 
-                presetText = "Place New Order"; presetAction = "Start New Order"; 
+                // nothing to change in label here - we show quantity presets in chat
+                toggleInputInteraction(false);
+                return;
+            } else if (currentState === STATES.CONFIRMATION) {
+                presetText = "Place New Order"; presetAction = "Start New Order";
             }
 
             PRESET_BUTTON.textContent = presetText;
         }
 
         function usePreset(message) {
-            
-            // --- LOGIC TO HANDLE MODAL BUTTONS FROM CHAT BUBBLES ---
-            if (message === 'Enter Name') {
-                openNameModal();
-                DROPDOWN_MENU.classList.add('hidden'); 
-                return;
-            }
-            if (message === 'Enter Mobile Number') {
-                openMobileModal();
-                DROPDOWN_MENU.classList.add('hidden'); 
-                return;
-            }
-            // Address doesn't use a modal, it requires manual typing/focus
-            if (message === 'Enter Address') {
-                MESSAGE_INPUT.readOnly = false;
-                MESSAGE_INPUT.focus();
-                DROPDOWN_MENU.classList.add('hidden');
-                return;
-            }
-            // -----------------------------------------------------------
+            if (message === 'Enter Name') { openNameModal(); DROPDOWN_MENU.classList.add('hidden'); return; }
+            if (message === 'Enter Mobile Number') { openMobileModal(); DROPDOWN_MENU.classList.add('hidden'); return; }
+            if (message === 'Enter Address') { MESSAGE_INPUT.readOnly = false; MESSAGE_INPUT.focus(); DROPDOWN_MENU.classList.add('hidden'); return; }
 
             MESSAGE_INPUT.value = message;
             sendMessage();
-             // Close dropdown if it was opened
             DROPDOWN_MENU.classList.add('hidden');
         }
 
@@ -527,13 +396,15 @@
             return unsafe.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
         }
 
+        // Append message and reliably scroll the container to bottom
         function appendMessage(text, isSent, quickReplies = []) {
             const time = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
             const wrapper = document.createElement('div');
-            wrapper.className = `message-wrapper ${isSent ? 'justify-end' : 'justify-start'}`;
+            wrapper.className = 'message-wrapper ' + (isSent ? 'justify-end' : 'justify-start');
 
             const bubble = document.createElement('div');
-            bubble.className = `message-bubble ${isSent ? 'sent' : 'received'}`;
+            bubble.className = 'message-bubble ' + (isSent ? 'sent' : 'received');
 
             let contentHTML = `<p class="text-sm whitespace-pre-wrap">${escapeHtml(text)}</p>`;
 
@@ -556,8 +427,10 @@
             wrapper.appendChild(bubble);
             MESSAGES_COLUMN.appendChild(wrapper);
 
-            // Scroll messages container to bottom
-            MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
+            // Scroll messages container to bottom (robust)
+            requestAnimationFrame(()=> {
+                MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
+            });
         }
 
         function showTypingIndicator() {
@@ -568,22 +441,20 @@
 
             const bubble = document.createElement('div');
             bubble.className = 'message-bubble received';
-            
+
             const typingContent = document.createElement('div');
             typingContent.className = 'flex items-center';
-            typingContent.innerHTML = `
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-            `;
-            
+            typingContent.innerHTML = `<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>`;
             bubble.appendChild(typingContent);
+
             bubble.innerHTML += `<div class="bubble-meta"><span>${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span></div>`;
-            
+
             wrapper.appendChild(bubble);
             MESSAGES_COLUMN.appendChild(wrapper);
             typingIndicatorElement = wrapper;
-            MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
+            requestAnimationFrame(()=> {
+                MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
+            });
         }
 
         function removeTypingIndicator() {
@@ -591,7 +462,7 @@
             if (indicator) { indicator.remove(); typingIndicatorElement = null; }
         }
 
-        // ---------- WEBHOOK SENDER (improved) ----------
+        // ---------- Webhook sender (unchanged) ----------
         async function sendOrderToWebhook(data) {
             appendMessage("Saving order to backend...", false);
             const controller = new AbortController();
@@ -644,11 +515,11 @@
             }
         }
 
-        // ---------- BUSINESS LOGIC ----------
+        // ---------- Business logic (mostly unchanged) ----------
         function getMenuText() {
             let menu = "नमस्ते! Welcome. Here is the current rate list:\n\n";
             MENU.forEach(item => { menu += `• ${item.name} - ${item.price} Rs/${item.unit}\n`; });
-            menu += `\nYou can add up to ${MAX_ITEMS} items to your order.`;
+            menu += `\nYou can add up to ${MAX_ITEMS} items to your order.`; 
             menu += "\nClick the *Select Items* button below to choose what you need.";
             return menu;
         }
@@ -672,18 +543,14 @@
         function showItemSelectionMenu() {
             let currentOrder = "";
             let replies = [];
-            
             const itemCount = orderData.orderItems.length;
             const remainingItems = MAX_ITEMS - itemCount;
-            
-            if (itemCount < MAX_ITEMS) {
-                replies = MENU.map(i => i.name);
-            }
-            
+
+            if (itemCount < MAX_ITEMS) replies = MENU.map(i => i.name);
             if (itemCount > 0) {
                 currentOrder = "🛒 Your current order:\n" + orderData.orderItems.map(i => `• ${i.quantity}${i.unit.includes('kg') ? 'kg' : 'L'} ${i.name}`).join('\n') + "\n\n";
             }
-            
+
             let systemMessage = `What else would you like to order? Select an item below. (You can add ${remainingItems} more items).`;
 
             if (itemCount >= MAX_ITEMS) {
@@ -692,7 +559,7 @@
             } else if (itemCount > 0) {
                 replies.push("Done Ordering");
             }
-            
+
             appendMessage(currentOrder + systemMessage, false, replies);
             updateState(STATES.ORDERING);
         }
@@ -714,21 +581,9 @@
             sendMessage('MOBILE_SUBMIT:' + mobile, mobile);
         }
 
-        // Three-dot menu functions
-        function toggleDropdown() {
-            DROPDOWN_MENU.classList.toggle('hidden');
-        }
-
-        function downloadApp() {
-            DROPDOWN_MENU.classList.add('hidden');
-            document.getElementById('download-modal').showModal();
-        }
-        
-        function showHelp() {
-            appendMessage("💡 Help: You can order up to 5 unique items. Select items from the menu, specify quantities, and provide your details to complete the order. Use 'Done Ordering' when finished.", false);
-            DROPDOWN_MENU.classList.add('hidden');
-        }
-        
+        function toggleDropdown() { DROPDOWN_MENU.classList.toggle('hidden'); }
+        function downloadApp() { DROPDOWN_MENU.classList.add('hidden'); document.getElementById('download-modal').showModal(); }
+        function showHelp() { appendMessage("💡 Help: You can order up to 5 unique items. Select items from the menu, specify quantities, and provide your details to complete the order. Use 'Done Ordering' when finished.", false); DROPDOWN_MENU.classList.add('hidden'); }
         function resetOrder() {
             orderData = { orderItems: [], name: '', mobile: '', address: '' };
             updateItemCounter();
@@ -737,10 +592,9 @@
             DROPDOWN_MENU.classList.add('hidden');
         }
 
-        // CORE state handler
+        // CORE state handler (kept intact, minor calls to scroll handled by appendMessage)
         async function handleSystemResponse(messageText) {
-            
-            toggleInputInteraction(true); 
+            toggleInputInteraction(true);
             showTypingIndicator();
 
             try {
@@ -758,17 +612,14 @@
                     updateState(STATES.ORDERING);
                     return;
                 }
-                if (input === 'Select Items' || input === 'VIEW_MENU') { 
-                    showItemSelectionMenu(); 
-                    return; 
-                }
+                if (input === 'Select Items' || input === 'VIEW_MENU') { showItemSelectionMenu(); return; }
                 if (input === 'Done Ordering') {
-                    if (orderData.orderItems.length === 0) { 
-                        appendMessage("Your order is empty. Please select items first.", false, ["Select Items"]); 
-                    } else { 
-                        let orderListText = "Order Summary so far:\n" + orderData.orderItems.map(i => `• ${i.quantity}${i.unit.includes('kg') ? 'kg' : 'L'} ${i.name}`).join('\n'); 
-                        appendMessage(`Great! I recorded your order.\n\n${orderListText}\n\nNext, please type your full name into the input field or click the button below.`, false, ["Enter Name"]); 
-                        updateState(STATES.ASK_NAME); 
+                    if (orderData.orderItems.length === 0) {
+                        appendMessage("Your order is empty. Please select items first.", false, ["Select Items"]);
+                    } else {
+                        let orderListText = "Order Summary so far:\n" + orderData.orderItems.map(i => `• ${i.quantity}${i.unit.includes('kg') ? 'kg' : 'L'} ${i.name}`).join('\n');
+                        appendMessage(`Great! I recorded your order.\n\n${orderListText}\n\nNext, please type your full name into the input field or click the button below.`, false, ["Enter Name"]);
+                        updateState(STATES.ASK_NAME);
                     }
                     return;
                 }
@@ -776,21 +627,22 @@
                     appendMessage(`You've reached the maximum of ${MAX_ITEMS} items. Please click "Done Ordering" to proceed.`, false, ["Done Ordering"]);
                     return;
                 }
+
                 // Internal commands for modal interaction
-                if (messageText.startsWith('NAME_SUBMIT:')) { 
-                    orderData.name = messageText.substring('NAME_SUBMIT:'.length); 
-                    appendMessage(`Thank you, ${orderData.name}! Now provide your 10-digit mobile number.`, false, ["Enter Mobile Number"]); 
-                    updateState(STATES.ASK_MOBILE); 
-                    return; 
+                if (messageText.startsWith('NAME_SUBMIT:')) {
+                    orderData.name = messageText.substring('NAME_SUBMIT:'.length);
+                    appendMessage(`Thank you, ${orderData.name}! Now provide your 10-digit mobile number.`, false, ["Enter Mobile Number"]);
+                    updateState(STATES.ASK_MOBILE);
+                    return;
                 }
-                if (messageText.startsWith('MOBILE_SUBMIT:')) { 
-                    orderData.mobile = messageText.substring('MOBILE_SUBMIT:'.length); 
-                    appendMessage("Got it! Finally, please share your full delivery address.", false, ["Enter Address"]); 
-                    updateState(STATES.ASK_ADDRESS); 
-                    return; 
+                if (messageText.startsWith('MOBILE_SUBMIT:')) {
+                    orderData.mobile = messageText.substring('MOBILE_SUBMIT:'.length);
+                    appendMessage("Got it! Finally, please share your full delivery address.", false, ["Enter Address"]);
+                    updateState(STATES.ASK_ADDRESS);
+                    return;
                 }
 
-                // State-specific
+                // State-specific logic
                 switch (currentState) {
                     case STATES.WELCOME:
                         await handleSystemResponse('Start');
@@ -798,8 +650,8 @@
 
                     case STATES.ORDERING: {
                         if (orderData.orderItems.length >= MAX_ITEMS) {
-                             appendMessage(`🛑 Order limit of ${MAX_ITEMS} items reached. Please click 'Done Ordering'.`, false, ["Done Ordering"]);
-                             break;
+                            appendMessage(`🛑 Order limit of ${MAX_ITEMS} items reached. Please click 'Done Ordering'.`, false, ["Done Ordering"]);
+                            break;
                         }
 
                         const selectedItem = MENU.find(item => item.name === input);
@@ -819,10 +671,10 @@
                     case STATES.SELECTING_ITEM_QTY: {
                         const quantity = parseFloat(input);
                         const selectedItemDetails = MENU.find(i => i.id === tempSelectedItem);
-                        if (!selectedItemDetails) { 
-                            appendMessage("Item selection lost. Please select an item again.", false, ["Select Items"]); 
-                            updateState(STATES.ORDERING); 
-                            break; 
+                        if (!selectedItemDetails) {
+                            appendMessage("Item selection lost. Please select an item again.", false, ["Select Items"]);
+                            updateState(STATES.ORDERING);
+                            break;
                         }
 
                         const unit = selectedItemDetails.unit.includes('Litre') ? 'Litres' : 'Kgs';
@@ -832,7 +684,6 @@
                             break;
                         }
 
-                        // Add item to order
                         orderData.orderItems.push({
                             name: selectedItemDetails.name.split(' / ')[0].trim(),
                             quantity: quantity,
@@ -843,8 +694,7 @@
                         tempSelectedItem = null;
                         updateItemCounter();
                         appendMessage(`Added ${quantity}${selectedItemDetails.unit} of ${selectedItemDetails.name.split(' / ')[0].trim()} to your order.`, false);
-                        
-                        // Check if we've reached the limit
+
                         if (orderData.orderItems.length >= MAX_ITEMS) {
                             appendMessage(`You've reached the maximum of ${MAX_ITEMS} items.`, false, ["Done Ordering"]);
                         } else {
@@ -856,7 +706,7 @@
                     case STATES.ASK_NAME:
                         if ((messageText || "").length < 3) { appendMessage("Please type at least 3 characters for your name.", false, ["Enter Name"]); break; }
                         orderData.name = messageText;
-                        appendMessage(`Thank you, ${orderData.name}! Now provide your 10-digit mobile number.`, false, ["Enter Mobile Number"]); 
+                        appendMessage(`Thank you, ${orderData.name}! Now provide your 10-digit mobile number.`, false, ["Enter Mobile Number"]);
                         updateState(STATES.ASK_MOBILE);
                         break;
 
@@ -872,7 +722,7 @@
                     case STATES.ASK_ADDRESS:
                         if ((messageText || "").length < 10) { appendMessage("Address seems too short. Please include street, city and pincode.", false, ["Enter Address"]); break; }
                         orderData.address = messageText;
-                        
+
                         const summary = generateSummary(orderData);
                         appendMessage(summary, false);
                         await sendOrderToWebhook(orderData);
@@ -884,6 +734,7 @@
                         updateState(STATES.WELCOME);
                         break;
                 }
+
             } catch (err) {
                 console.error('handleSystemResponse error', err);
                 appendMessage("System error occurred. Try starting a new order.", false, ["Start New Order"]);
@@ -897,17 +748,18 @@
             messageText = messageText || MESSAGE_INPUT.value.trim();
             uiDisplayMessage = uiDisplayMessage || messageText;
             if (!messageText) { return; }
-            
+
+            // clear input for typed messages
             MESSAGE_INPUT.value = '';
             appendMessage(uiDisplayMessage, true);
-            
+
             await handleSystemResponse(messageText);
         }
 
         // Init after DOM ready
         window.addEventListener('DOMContentLoaded', () => {
             MESSAGES_COLUMN = document.getElementById('messages-column');
-            MESSAGES_CONTAINER = document.getElementById('messages-container');
+            MESSAGES_CONTAINER = document.getElementById('messages-container'); // scrollable container
             MESSAGE_INPUT = document.getElementById('message-input');
             SEND_BUTTON = document.getElementById('send-button');
             PRESET_BUTTON = document.getElementById('preset-button');
@@ -919,8 +771,8 @@
             CUSTOMER_MOBILE_INPUT = document.getElementById('customer-mobile-input');
             MENU_BUTTON = document.getElementById('menu-button');
             DROPDOWN_MENU = document.getElementById('dropdown-menu');
-            
-            // Expose global functions to HTML
+
+            // expose functions
             window.handleNameSubmit = handleNameSubmit;
             window.handleMobileSubmit = handleMobileSubmit;
             window.sendMessage = sendMessage;
@@ -929,7 +781,6 @@
             window.showHelp = showHelp;
             window.resetOrder = resetOrder;
 
-            // Set up menu listener
             MENU_BUTTON.addEventListener('click', toggleDropdown);
             document.addEventListener('click', (event) => {
                 if (!MENU_BUTTON.contains(event.target) && !DROPDOWN_MENU.contains(event.target)) {
