@@ -42,24 +42,29 @@
         }
 
         #app {
-            min-height: 100vh;
-            max-height: 100vh;
+            height: 100vh;
             width: 100%;
             border-radius: 0;
+            display: flex;
+            flex-direction: column;
         }
         #chat-window {
             border-radius: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         @media (min-width: 768px) {
             #app {
-                min-height: 80vh;
-                max-height: 95vh;
-                max-width: 3xl;
+                height: 95vh;
+                max-width: 600px;
                 border-radius: 1rem;
+                margin: 20px auto;
             }
             body {
-                padding: 20px;
+                padding: 0;
             }
             #message-input {
                 font-size: 16px;
@@ -176,10 +181,10 @@
 </head>
 <body class="bg-[#DADBD3] font-sans">
 
-    <div id="app" class="flex w-full md:max-w-3xl md:rounded-xl md:shadow-2xl overflow-hidden">
+    <div id="app" class="w-full md:max-w-3xl md:rounded-xl md:shadow-2xl overflow-hidden">
         <div id="chat-window" class="flex-grow w-full flex flex-col bg-white rounded-xl shadow-xl">
             <!-- Header - Always Visible -->
-            <div class="p-3 bg-whatsapp-dark text-white shadow-lg flex items-center justify-between rounded-t-xl relative flex-shrink-0">
+            <div class="p-3 bg-whatsapp-dark text-white shadow-lg flex items-center justify-between rounded-t-xl flex-shrink-0">
                 <div class="flex items-center min-w-0 flex-1">
                     <div class="w-10 h-10 rounded-full bg-whatsapp-light flex items-center justify-center font-semibold text-lg mr-3 shadow-md flex-shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
@@ -187,7 +192,7 @@
                     <div class="min-w-0 flex-1">
                         <p class="font-bold truncate">Automated Grocery Order Bot</p>
                         <div class="flex text-xs opacity-80 space-x-2">
-                            <span id="bot-status">State: Initializing...</span>
+                            <span id="bot-status">State: ORDERING</span>
                             <span>•</span>
                             <span id="item-counter">Items: 0/5</span>
                         </div>
@@ -218,7 +223,7 @@
             </div>
 
             <!-- Messages -->
-            <div id="messages-container" class="p-4 chat-messages">
+            <div id="messages-container" class="flex-1 p-4 chat-messages overflow-y-auto">
                 <div class="flex flex-col space-y-2"></div>
             </div>
 
@@ -226,10 +231,10 @@
             <div class="p-2 bg-gray-100 flex items-center border-t border-gray-200 flex-shrink-0">
                 <button id="preset-button" title="Quick Action"
                         class="flex-shrink-0 mr-2 p-2 text-sm font-semibold text-white bg-preset-bg hover:bg-black/80 rounded-full transition duration-150 shadow-md items-center justify-center h-10 transform hover:scale-[1.02] whitespace-nowrap">
-                    Let's Start!
+                    Select Items
                 </button>
 
-                <input id="message-input" type="text" placeholder="Type a message..."
+                <input id="message-input" type="text" placeholder="Use buttons to select options"
                       class="flex-grow p-3 rounded-full border-none bg-white shadow-lg focus:outline-none focus:ring-2 focus:ring-whatsapp-dark transition-all duration-150 min-w-0"
                       readonly>
 
