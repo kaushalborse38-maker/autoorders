@@ -516,17 +516,18 @@
             return unsafe.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
         }
 
-        // Smooth scroll helper: always scroll to bottom smoothly
-        function scrollMessagesToBottom(smooth = true) {
-            if (!MESSAGES_CONTAINER) return;
-            try {
-                if (smooth && 'scrollTo' in MESSAGES_CONTAINER) {
-                    MESSAGES_CONTAINER.scrollTo({ top: MESSAGES_CONTAINER.scrollHeight, behavior: 'smooth' });
-                } else {
+        // ---------- SCROLL UTILS - WhatsApp behavior ----------
+        function scrollToLastMessage() {
+            if (!MESSAGES_COLUMN) return;
+            const last = MESSAGES_COLUMN.lastElementChild;
+            if (last && last.scrollIntoView) {
+                try {
+                    last.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                } catch (e) {
+                    // fallback
                     MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
                 }
-            } catch (e) {
-                // fallback
+            } else {
                 MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
             }
         }
@@ -565,8 +566,11 @@
             wrapper.appendChild(bubble);
             MESSAGES_COLUMN.appendChild(wrapper);
 
-            // Smoothly scroll messages container to bottom (gives the "older messages slide up" effect)
-            scrollMessagesToBottom(true);
+            // WhatsApp-like auto scroll
+            scrollToLastMessage();
+
+            // optional: slightly reduce visual jank by briefly focusing the new bubble for screen-readers
+            try { bubble.setAttribute('tabindex','-1'); bubble.focus({preventScroll:true}); } catch(e){}
         }
 
         function showTypingIndicator() {
@@ -591,14 +595,14 @@
             typingIndicatorElement = wrapper;
 
             // Scroll to bottom smoothly when typing appears
-            scrollMessagesToBottom(true);
+            scrollToLastMessage();
         }
 
         function removeTypingIndicator() {
             const indicator = document.getElementById('typing-indicator');
             if (indicator) { indicator.remove(); typingIndicatorElement = null; }
             // After removing typing indicator, keep the view scrolled to bottom
-            scrollMessagesToBottom(true);
+            scrollToLastMessage();
         }
 
         // ---------- Webhook sender ----------
@@ -971,24 +975,25 @@
             toggleInputInteraction(false);
 
             // On first load: ensure the messages container is scrolled so the initial bot message is visible
-            // and highlight the preset button briefly so user notices "Start Order" (or "Select Items").
+            // and ensure the Start/Select Items button is visible and highlighted briefly.
             setTimeout(() => {
-                // Smooth-scroll messages to bottom
-                scrollMessagesToBottom(true);
+                // Scroll last message into view
+                scrollToLastMessage();
 
-                // Add a short highlight animation to preset button so user sees Start/Select Items
-                PRESET_BUTTON.classList.add('pulse-highlight');
-                // Remove highlight after animation to keep UI clean
-                setTimeout(() => PRESET_BUTTON.classList.remove('pulse-highlight'), 3000);
-                // Also focus the preset button for accessibility
-                try { PRESET_BUTTON.focus({ preventScroll: true }); } catch(e) {}
+                // Ensure preset button (Start/Select Items) is visible & highlighted
+                try {
+                    PRESET_BUTTON.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    PRESET_BUTTON.classList.add('pulse-highlight');
+                    setTimeout(() => PRESET_BUTTON.classList.remove('pulse-highlight'), 3000);
+                    try { PRESET_BUTTON.focus({ preventScroll: true }); } catch(e){}
+                } catch (e) { /* ignore */ }
             }, 350); // small delay so the first messages are appended
 
             // Re-evaluate input interaction on resize (for mobile/desktop layout switch)
             window.onresize = () => {
                 toggleInputInteraction(SEND_BUTTON.disabled);
                 // keep the viewport pinned to bottom on resize
-                scrollMessagesToBottom(false);
+                try { scrollToLastMessage(); } catch(e){}
             };
         });
     </script>
