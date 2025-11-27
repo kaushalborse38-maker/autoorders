@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>WhatsApp Order System - Mobile Optimized</title>
+    <title>WhatsApp Grocery Order System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
@@ -169,54 +169,155 @@
             0%, 60%, 100% { transform: translateY(0); }
             30% { transform: translateY(-5px); }
         }
+        
+        /* Grocery Bot Specific Styles */
+        .grocery-header {
+            background-color: #25D366;
+            color: white;
+            padding: 16px 20px;
+            text-align: center;
+            position: relative;
+            margin: 0;
+        }
+        
+        .grocery-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .grocery-status {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .grocery-content {
+            padding: 20px;
+            background-color: white;
+        }
+        
+        .welcome-message {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #555;
+        }
+        
+        .rate-list {
+            margin-bottom: 25px;
+        }
+        
+        .rate-list h2 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            color: #333;
+        }
+        
+        .item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .item:last-child {
+            border-bottom: none;
+        }
+        
+        .item-name {
+            font-weight: 500;
+        }
+        
+        .item-price {
+            color: #25D366;
+            font-weight: 600;
+        }
+        
+        .action-section {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .select-btn {
+            background-color: #25D366;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            box-shadow: 0 2px 6px rgba(37, 211, 102, 0.3);
+            margin-top: 10px;
+        }
+        
+        .select-btn:hover {
+            background-color: #20bd5a;
+        }
+        
+        .items-count {
+            margin-top: 12px;
+            font-size: 14px;
+            color: #666;
+        }
     </style>
 </head>
 <body class="bg-[#DADBD3] font-sans">
 
     <div id="app" class="w-full md:max-w-3xl md:rounded-xl overflow-hidden">
         <div id="chat-window" class="flex-grow w-full flex flex-col">
-            <!-- Header - Positioned Lower -->
-            <div class="p-3 bg-whatsapp-dark text-white shadow-lg flex items-center justify-between flex-shrink-0 mt-16">
-                <div class="flex items-center min-w-0 flex-1">
-                    <div class="w-10 h-10 rounded-full bg-whatsapp-light flex items-center justify-center font-semibold text-lg mr-3 shadow-md flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <p class="font-bold truncate">Automated Grocery Order Bot</p>
-                        <div class="flex text-xs opacity-80 space-x-2">
-                            <span id="bot-status">State: ORDERING</span>
-                            <span>•</span>
-                            <span id="item-counter">Items: 0/5</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Three dots menu -->
-                <div class="relative flex-shrink-0 ml-2">
-                    <button id="menu-button" class="p-2 rounded-full hover:bg-white/10 transition-colors" aria-label="More options">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                    </button>
-                    <!-- Dropdown Menu -->
-                    <div id="dropdown-menu" class="dropdown-menu hidden">
-                        <div class="dropdown-item" onclick="downloadApp()">
-                            <i class="fas fa-download text-whatsapp-dark"></i>
-                            <span>Download App</span>
-                        </div>
-                        <div class="dropdown-item" onclick="showHelp()">
-                            <i class="fas fa-question-circle text-whatsapp-dark"></i>
-                            <span>Help & Info</span>
-                        </div>
-                        <div class="dropdown-item" onclick="resetOrder()">
-                            <i class="fas fa-redo text-whatsapp-dark"></i>
-                            <span>Reset Order</span>
-                        </div>
-                    </div>
-                </div>
+            <!-- Grocery Bot Header - Integrated -->
+            <div class="grocery-header">
+                <h1>Automated Grocery Order Bot</h1>
+                <div class="grocery-status">State: ORDERING • items: 0/5</div>
             </div>
 
             <!-- Messages - Positioned Higher -->
             <div id="messages-container" class="flex-1 p-4 chat-messages overflow-y-auto">
-                <div class="flex flex-col space-y-2"></div>
+                <div class="flex flex-col space-y-2">
+                    <!-- Grocery Bot Content - Integrated -->
+                    <div class="grocery-content">
+                        <div class="welcome-message">
+                            <p><strong>Welcome.</strong> Here is the current rate list:</p>
+                        </div>
+                        
+                        <div class="rate-list">
+                            <h2>Product Prices</h2>
+                            <div class="item">
+                                <span class="item-name">MILK</span>
+                                <span class="item-price">60 Rs/Litre</span>
+                            </div>
+                            <div class="item">
+                                <span class="item-name">OIL</span>
+                                <span class="item-price">150 Rs/Litre</span>
+                            </div>
+                            <div class="item">
+                                <span class="item-name">RICE</span>
+                                <span class="item-price">45 Rs/kg</span>
+                            </div>
+                            <div class="item">
+                                <span class="item-name">WHEAT</span>
+                                <span class="item-price">30 Rs/kg</span>
+                            </div>
+                            <div class="item">
+                                <span class="item-name">FLOUR</span>
+                                <span class="item-price">35 Rs/kg</span>
+                            </div>
+                            <div class="item">
+                                <span class="item-name">CORN</span>
+                                <span class="item-price">25 Rs/kg</span>
+                            </div>
+                        </div>
+                        
+                        <div class="action-section">
+                            <p>You can add up to 5 items to your order. Click the button below to choose what you need.</p>
+                            <button class="select-btn">Select Items</button>
+                            <div class="items-count">Current items: 0/5</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Input Bar -->
