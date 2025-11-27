@@ -89,6 +89,7 @@
             background-color: var(--chat-bg-pattern, #E5DDD5);
             padding: 16px;
             min-height: 0;
+            scroll-behavior: smooth; /* smooth scroll when we programmatically change scrollTop */
         }
         
         /* Custom Scrollbar for desktop */
@@ -265,6 +266,17 @@
         .typing-dot { width:8px; height:8px; border-radius:50%; background:#999; margin:0 3px; animation: typing 1.4s infinite ease-in-out; }
         .typing-dot:nth-child(1){ animation-delay:0s } .typing-dot:nth-child(2){ animation-delay:.2s } .typing-dot:nth-child(3){ animation-delay:.4s }
         @keyframes typing { 0%,60%,100%{ transform: translateY(0) } 30%{ transform: translateY(-5px) } }
+
+        /* Small pulse animation used to highlight Start/Select Items button at app start */
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(37,211,102,0.7); transform: translateY(0); }
+            70% { box-shadow: 0 0 0 14px rgba(37,211,102,0); transform: translateY(-2px); }
+            100% { box-shadow: 0 0 0 0 rgba(37,211,102,0); transform: translateY(0); }
+        }
+        .pulse-highlight {
+            animation: pulseGlow 1.4s ease-out 0s 2;
+        }
+
     </style>
 </head>
 <body>
@@ -504,6 +516,21 @@
             return unsafe.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
         }
 
+        // Smooth scroll helper: always scroll to bottom smoothly
+        function scrollMessagesToBottom(smooth = true) {
+            if (!MESSAGES_CONTAINER) return;
+            try {
+                if (smooth && 'scrollTo' in MESSAGES_CONTAINER) {
+                    MESSAGES_CONTAINER.scrollTo({ top: MESSAGES_CONTAINER.scrollHeight, behavior: 'smooth' });
+                } else {
+                    MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
+                }
+            } catch (e) {
+                // fallback
+                MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
+            }
+        }
+
         // Append message and reliably scroll the container to bottom
         function appendMessage(text, isSent, quickReplies = []) {
             const time = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
@@ -538,8 +565,8 @@
             wrapper.appendChild(bubble);
             MESSAGES_COLUMN.appendChild(wrapper);
 
-            // Scroll messages container to bottom (robust)
-            MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
+            // Smoothly scroll messages container to bottom (gives the "older messages slide up" effect)
+            scrollMessagesToBottom(true);
         }
 
         function showTypingIndicator() {
@@ -562,12 +589,16 @@
             wrapper.appendChild(bubble);
             MESSAGES_COLUMN.appendChild(wrapper);
             typingIndicatorElement = wrapper;
-            MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
+
+            // Scroll to bottom smoothly when typing appears
+            scrollMessagesToBottom(true);
         }
 
         function removeTypingIndicator() {
             const indicator = document.getElementById('typing-indicator');
             if (indicator) { indicator.remove(); typingIndicatorElement = null; }
+            // After removing typing indicator, keep the view scrolled to bottom
+            scrollMessagesToBottom(true);
         }
 
         // ---------- Webhook sender ----------
@@ -939,8 +970,26 @@
             handleSystemResponse('Start');
             toggleInputInteraction(false);
 
+            // On first load: ensure the messages container is scrolled so the initial bot message is visible
+            // and highlight the preset button briefly so user notices "Start Order" (or "Select Items").
+            setTimeout(() => {
+                // Smooth-scroll messages to bottom
+                scrollMessagesToBottom(true);
+
+                // Add a short highlight animation to preset button so user sees Start/Select Items
+                PRESET_BUTTON.classList.add('pulse-highlight');
+                // Remove highlight after animation to keep UI clean
+                setTimeout(() => PRESET_BUTTON.classList.remove('pulse-highlight'), 3000);
+                // Also focus the preset button for accessibility
+                try { PRESET_BUTTON.focus({ preventScroll: true }); } catch(e) {}
+            }, 350); // small delay so the first messages are appended
+
             // Re-evaluate input interaction on resize (for mobile/desktop layout switch)
-            window.onresize = () => toggleInputInteraction(SEND_BUTTON.disabled);
+            window.onresize = () => {
+                toggleInputInteraction(SEND_BUTTON.disabled);
+                // keep the viewport pinned to bottom on resize
+                scrollMessagesToBottom(false);
+            };
         });
     </script>
 </body>
