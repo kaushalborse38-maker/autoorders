@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>WhatsApp Order System - Mobile Optimized</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'whatsapp-dark': '#075E54',
+                        'whatsapp-light': '#25D366',
+                        'chat-bg-pattern': '#E5DDD5',
+                        'bubble-sent': '#DCF8C6',
+                        'bubble-received': '#FFFFFF',
+                        'preset-bg': '#333333',
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%; 
+            width: 100%;
+            overflow: hidden; 
+        }
+        body {
+            background-color: #DADBD3;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        #app {
+            min-height: 100vh;
+            max-height: 100vh;
+            width: 100%;
+            border-radius: 0;
+        }
+        #chat-window {
+            border-radius: 0;
+        }
+
+        @media (min-width: 768px) {
+            #app {
+                min-height: 80vh;
+                max-height: 95vh;
+                max-width: 3xl;
+                border-radius: 1rem;
+            }
+            body {
+                padding: 20px;
+            }
+            #message-input {
+                font-size: 16px;
+            }
+        }
+
+        .chat-messages {
+            background-color: #E5DDD5;
+            overflow-y: auto;
+        }
+        .chat-messages::-webkit-scrollbar { width: 6px; }
+        .chat-messages::-webkit-scrollbar-thumb { background-color: #a8a8a8; border-radius: 3px; }
+        .chat-messages::-webkit-scrollbar-track { background: transparent; }
+
+        #message-input {
+            font-size: 1rem;
+        }
+        @media (max-width: 768px) {
+            #message-input {
+                font-size: 16px;
+            }
+        }
+
+        .quick-reply-button {
+            margin-top: 4px;
+            padding: 10px 16px;
+            border: 1px solid #C4C4C4;
+            border-radius: 20px;
+            background-color: #F8F8F8;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #128C7E;
+            transition: background-color 0.15s, transform 0.1s;
+            white-space: nowrap;
+        }
+        .quick-reply-button:hover {
+            background-color: #E0E0E0;
+            transform: translateY(-1px);
+        }
+        .quick-reply-container { 
+            margin-top: 10px; 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 8px; 
+        }
+        .done-ordering-button {
+            background-color: #25D366 !important;
+            color: white !important;
+            border-color: #075E54 !important;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        dialog {
+            border: none;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            max-width: 90%;
+            width: 450px;
+            animation: fadeIn 0.3s ease-out;
+        }
+        @media (max-width: 767px) {
+            dialog {
+                width: calc(100% - 32px); 
+                margin: 16px;
+                padding: 1.5rem;
+                border-radius: 1rem;
+            }
+        }
+        dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+
+        #dropdown-menu {
+            position: absolute;
+            right: 0;
+            top: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 8px 0;
+            z-index: 1000;
+            min-width: 180px;
+        }
+        .dropdown-item {
+            padding: 12px 16px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #999;
+            margin: 0 2px;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+        
+        /* Mobile-specific styles for the preset button */
+        @media (max-width: 767px) {
+            #preset-button {
+                display: flex !important;
+                margin-right: 8px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#DADBD3] font-sans">
+
+    <div id="app" class="flex w-full md:max-w-3xl md:rounded-xl md:shadow-2xl overflow-hidden">
+        <div id="chat-window" class="flex-grow w-full flex flex-col bg-white rounded-xl shadow-xl">
+            <!-- Header -->
+            <div class="p-3 bg-whatsapp-dark text-white shadow-lg flex items-center justify-between rounded-t-xl relative">
+                <div class="flex items-center min-w-0 flex-1">
+                    <div class="w-10 h-10 rounded-full bg-whatsapp-light flex items-center justify-center font-semibold text-lg mr-3 shadow-md flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="font-bold truncate">Automated Grocery Order Bot</p>
+                        <div class="flex text-xs opacity-80 space-x-2">
+                            <span id="bot-status">State: Initializing...</span>
+                            <span>•</span>
+                            <span id="item-counter">Items: 0/5</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Three dots menu -->
+                <div class="relative flex-shrink-0 ml-2">
+                    <button id="menu-button" class="p-2 rounded-full hover:bg-white/10 transition-colors" aria-label="More options">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                    </button>
+                    <!-- Dropdown Menu -->
+                    <div id="dropdown-menu" class="dropdown-menu hidden">
+                        <div class="dropdown-item" onclick="downloadApp()">
+                            <i class="fas fa-download text-whatsapp-dark"></i>
+                            <span>Download App</span>
+                        </div>
+                        <div class="dropdown-item" onclick="showHelp()">
+                            <i class="fas fa-question-circle text-whatsapp-dark"></i>
+                            <span>Help & Info</span>
+                        </div>
+                        <div class="dropdown-item" onclick="resetOrder()">
+                            <i class="fas fa-redo text-whatsapp-dark"></i>
+                            <span>Reset Order</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            <div id="messages-container" class="flex-grow p-4 chat-messages">
+                <div class="flex flex-col space-y-2"></div>
+            </div>
+
+            <!-- Input Bar -->
+            <div class="p-2 bg-gray-100 flex items-center border-t border-gray-200">
+                <button id="preset-button" title="Quick Action"
+                        class="flex-shrink-0 mr-2 p-2 text-sm font-semibold text-white bg-preset-bg hover:bg-black/80 rounded-full transition duration-150 shadow-md items-center justify-center h-10 transform hover:scale-[1.02] whitespace-nowrap">
+                    Let's Start!
+                </button>
+
+                <input id="message-input" type="text" placeholder="Type a message..."
+                      class="flex-grow p-3 rounded-full border-none bg-white shadow-lg focus:outline-none focus:ring-2 focus:ring-whatsapp-dark transition-all duration-150 min-w-0">
+
+                <button id="send-button" onclick="sendMessage()"
+                        class="flex-shrink-0 ml-2 bg-whatsapp-light hover:bg-whatsapp-dark text-white p-3 rounded-full transition duration-150 transform hover:scale-105 shadow-xl w-12 h-12 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transform -rotate-45 ml-1">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals (Name, Mobile, Download) -->
+    <dialog id="name-modal">
+        <h2 class="text-2xl font-extrabold mb-4 text-whatsapp-dark">👤 Enter Your Name</h2>
+        <input type="text" id="customer-name-input" placeholder="Your Full Name (e.g., Jane Doe)"
+              class="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-whatsapp-light focus:ring-1 focus:ring-whatsapp-light transition-all duration-150 shadow-inner">
+        <div class="flex justify-end space-x-3 mt-6">
+            <button onclick="document.getElementById('name-modal').close()" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition duration-150 font-medium">Cancel</button>
+            <button onclick="handleNameSubmit()" class="px-5 py-2 bg-whatsapp-light text-white rounded-full hover:bg-whatsapp-dark transition duration-150 shadow-md font-medium transform hover:scale-105">Submit</button>
+        </div>
+    </dialog>
+
+    <dialog id="mobile-modal">
+        <h2 class="text-2xl font-extrabold mb-4 text-whatsapp-dark">📞 Enter Mobile Number</h2>
+        <input type="tel" id="customer-mobile-input" placeholder="10-digit Mobile Number" pattern="\d{10}" maxlength="10"
+              class="w-full p-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-whatsapp-light focus:ring-1 focus:ring-whatsapp-light transition-all duration-150 shadow-inner">
+        <div class="flex justify-end space-x-3 mt-6">
+            <button onclick="document.getElementById('mobile-modal').close()" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition duration-150 font-medium">Cancel</button>
+            <button onclick="handleMobileSubmit()" class="px-5 py-2 bg-whatsapp-light text-white rounded-full hover:bg-whatsapp-dark transition duration-150 shadow-md font-medium transform hover:scale-105">Submit</button>
+        </div>
+    </dialog>
+
+    <dialog id="download-modal">
+        <h2 class="text-2xl font-extrabold mb-4 text-whatsapp-dark">📱 Installation Help</h2>
+        <div class="mb-4 text-gray-700">
+            <p class="mb-2 font-semibold">To get a direct link or prompt to download our app:</p>
+            <p>1. On Android/Chrome: Tap the three dots menu (⋮) in your browser.</p>
+            <p>2. On iOS/Safari: Tap the Share button (<i class="fas fa-external-link-alt"></i>).</p>
+            <p>Then, select the "Add to Home Screen" or "Install App" option.</p>
+        </div>
+        <div class="flex justify-end mt-6">
+            <button onclick="document.getElementById('download-modal').close()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition duration-150 font-medium">Close</button>
+        </div>
+    </dialog>
+
+    <script>
+        // CONFIG
+        const WEBHOOK_URL = "https://borsekaushal.app.n8n.cloud/webhook/order-system-webhook";
+        const REQUEST_TIMEOUT_MS = 25000;
+        const SECRET_HEADER_VALUE = "";
+        const MAX_ITEMS = 5;
+
+        // References will be set after DOM loads
+        let MESSAGES_CONTAINER;
+        let MESSAGE_INPUT, SEND_BUTTON, PRESET_BUTTON, BOT_STATUS, NAME_MODAL, CUSTOMER_NAME_INPUT, MOBILE_MODAL, CUSTOMER_MOBILE_INPUT, ITEM_COUNTER;
+        let MENU_BUTTON, DROPDOWN_MENU;
+
+        // STATE
+        const USER_ID = 'User_' + Math.random().toString(36).substring(2,9);
+        const LIQUID_PRESETS = ["1","2","5","10"];
+        const SOLID_PRESETS = ["0.5","1","2","5","10"];
+
+        const STATES = {
+            WELCOME: 'WELCOME',
+            ORDERING: 'ORDERING',
+            SELECTING_ITEM_QTY: 'SELECTING_ITEM_QTY',
+            ASK_NAME: 'ASK_NAME',
+            ASK_MOBILE: 'ASK_MOBILE',
+            ASK_ADDRESS: 'ASK_ADDRESS',
+            CONFIRMATION: 'CONFIRMATION'
+        };
+
+        let currentState = STATES.WELCOME;
+        let orderData = { orderItems: [], name: '', mobile: '', address: '' };
+        const MENU = [
+            { id: 'milk', name: "MILK / दूध", price: 60, unit: "Litre", isLiquid: true },
+            { id: 'oil', name: "OIL / तेल", price: 150, unit: "Litre", isLiquid: true },
+            { id: 'rice', name: "RICE / तांदुळ", price: 45, unit: "kg", isLiquid: false },
+            { id: 'wheat', name: "WHEAT / गहू", price: 30, unit: "kg", isLiquid: false },
+            { id: 'flour', name: "FLOUR / पीठ", price: 35, unit: "kg", isLiquid: false },
+            { id: 'corn', name: "CORN / मका", price: 25, unit: "kg", isLiquid: false }
+        ];
+
+        let typingIndicatorElement = null;
+        let tempSelectedItem = null;
+
+        // ---------- UTILITIES ----------
+        function toggleInputInteraction(isDisabled) {
+            SEND_BUTTON.disabled = isDisabled;
+            MESSAGE_INPUT.disabled = isDisabled;
+            MESSAGE_INPUT.classList.toggle('opacity-60', isDisabled);
+            SEND_BUTTON.classList.toggle('opacity-60', isDisabled);
+            
+            // Always show preset button on mobile, conditionally on desktop
+            const isMobile = window.innerWidth < 768;
+            const addressStates = [STATES.ASK_NAME, STATES.ASK_MOBILE, STATES.ASK_ADDRESS];
+            const shouldShowPreset = isMobile || (!isDisabled && 
+                currentState !== STATES.SELECTING_ITEM_QTY &&
+                !addressStates.includes(currentState));
+
+            if (shouldShowPreset) {
+                PRESET_BUTTON.classList.remove('hidden');
+                PRESET_BUTTON.classList.add('flex');
+            } else {
+                PRESET_BUTTON.classList.add('hidden');
+                PRESET_BUTTON.classList.remove('flex');
+            }
+            
+            if (!isDisabled && !NAME_MODAL.open && !MOBILE_MODAL.open) { 
+                MESSAGE_INPUT.focus(); 
+            }
+        }
+        
+        function updateItemCounter() {
+            const itemCount = orderData.orderItems.length;
+            ITEM_COUNTER.textContent = `Items: ${itemCount}/${MAX_ITEMS}`;
+            
+            ITEM_COUNTER.classList.remove('text-red-300', 'text-yellow-300');
+            if (itemCount >= MAX_ITEMS) {
+                ITEM_COUNTER.classList.add('text-red-300');
+            } else if (itemCount >= MAX_ITEMS - 1) {
+                ITEM_COUNTER.classList.add('text-yellow-300');
+            }
+        }
+
+        function updateState(newState) {
+            currentState = newState;
+            BOT_STATUS.textContent = `State: ${newState}`;
+            updatePresetButton();
+            console.log('State ->', newState);
+        }
+
+        function updatePresetButton() {
+            let presetText = "Start Order";
+            let presetAction = "Start";
+            MESSAGE_INPUT.placeholder = "Type your message...";
+
+            PRESET_BUTTON.onclick = () => {
+                if (currentState === STATES.ORDERING) handleSystemResponse("VIEW_MENU");
+                else usePreset(presetAction);
+            };
+
+            if (currentState === STATES.WELCOME) {
+                presetText = "Start Order"; presetAction = "Start"; MESSAGE_INPUT.placeholder = "Click 'Start Order' to begin.";
+            } else if (currentState === STATES.ORDERING) {
+                presetText = "Select Items"; MESSAGE_INPUT.placeholder = "Select an item or type 'Done Ordering'";
+                if (orderData.orderItems.length >= MAX_ITEMS) { presetText = "Done Ordering"; }
+            } else if (currentState === STATES.SELECTING_ITEM_QTY) {
+                toggleInputInteraction(false); 
+                const details = MENU.find(i => i.id === tempSelectedItem);
+                const unit = details?.unit.includes('Litre') ? 'Litres' : 'Kgs';
+                MESSAGE_INPUT.placeholder = `Enter quantity in ${unit}...`;
+                return; 
+            } else if (currentState === STATES.ASK_NAME) { 
+                MESSAGE_INPUT.placeholder = "Enter your full name..."; 
+            } else if (currentState === STATES.ASK_MOBILE) { 
+                MESSAGE_INPUT.placeholder = "Enter your 10-digit mobile number..."; 
+            } else if (currentState === STATES.ASK_ADDRESS) { 
+                MESSAGE_INPUT.placeholder = "Enter your full delivery address..."; 
+            } else if (currentState === STATES.CONFIRMATION) { 
+                presetText = "Place New Order"; presetAction = "Start New Order"; 
+            }
+
+            PRESET_BUTTON.textContent = presetText;
+        }
+
+        function usePreset(message) {
+            
+            // --- LOGIC TO HANDLE MODAL BUTTONS FROM CHAT BUBBLES ---
+            if (message === 'Enter Name') {
+                openNameModal();
+                DROPDOWN_MENU.classList.add('hidden'); 
+                return;
+            }
+            if (message === 'Enter Mobile Number') {
+                openMobileModal();
+                DROPDOWN_MENU.classList.add('hidden'); 
+                return;
+            }
+            // Address doesn't use a modal, it requires manual typing/focus
+            if (message === 'Enter Address') {
+                MESSAGE_INPUT.focus();
+                DROPDOWN_MENU.classList.add('hidden');
+                return;
+            }
+            // -----------------------------------------------------------
+
+            MESSAGE_INPUT.value = message;
+            MESSAGE_INPUT.focus();
+            sendMessage();
+             // Close dropdown if it was opened
+            DROPDOWN_MENU.classList.add('hidden');
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+        }
+
+        function appendMessage(text, isSent, quickReplies = []) {
+            const time = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex ${isSent ? 'justify-end' : 'justify-start'} mt-1`;
+
+            const bubble = document.createElement('div');
+            const cornerClass = isSent ? 'rounded-br-none' : 'rounded-tl-none';
+            bubble.className = `${isSent ? 'bg-bubble-sent ml-auto' : 'bg-bubble-received'} p-3 rounded-xl max-w-[85%] md:max-w-md shadow-md ${cornerClass}`;
+
+            let contentHTML = `<p class="text-sm whitespace-pre-wrap">${escapeHtml(text)}</p>`;
+
+            if (quickReplies.length > 0 && !isSent) {
+                contentHTML += `<div class="quick-reply-container">`;
+                quickReplies.forEach(reply => {
+                    const isDone = reply === "Done Ordering";
+                    let customClass = '';
+                    if (isDone) customClass = 'done-ordering-button';
+                    contentHTML += `<button class="quick-reply-button ${customClass}" onclick="usePreset('${escapeHtml(reply)}')">${escapeHtml(reply)}</button>`;
+                });
+                contentHTML += `</div>`;
+            }
+
+            const checkmarkSVG = '<svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 ml-1 text-blue-500" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+            const timeStampHtml = `<span class="block text-right text-[10px] text-gray-500 mt-1 flex items-center justify-end"> ${time} ${isSent ? checkmarkSVG : ''}</span>`;
+
+            bubble.innerHTML = `${contentHTML}${timeStampHtml}`;
+
+            MESSAGES_CONTAINER.appendChild(wrapper);
+            wrapper.appendChild(bubble);
+            MESSAGES_CONTAINER.parentElement.scrollTop = MESSAGES_CONTAINER.parentElement.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            if (typingIndicatorElement) return;
+            const wrapper = document.createElement('div');
+            wrapper.id = 'typing-indicator';
+            wrapper.className = `flex justify-start mt-1`;
+            const bubble = document.createElement('div');
+            bubble.className = `bg-bubble-received p-3 rounded-xl max-w-[85%] md:max-w-md shadow-md rounded-tl-none`;
+            
+            const typingContent = document.createElement('div');
+            typingContent.className = 'flex items-center';
+            typingContent.innerHTML = `
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            `;
+            
+            bubble.appendChild(typingContent);
+            bubble.innerHTML += `<span class="block text-right text-[10px] text-gray-400 mt-1">${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>`;
+            
+            MESSAGES_CONTAINER.appendChild(wrapper);
+            wrapper.appendChild(bubble);
+            MESSAGES_CONTAINER.parentElement.scrollTop = MESSAGES_CONTAINER.parentElement.scrollHeight;
+            typingIndicatorElement = wrapper;
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) { indicator.remove(); typingIndicatorElement = null; }
+        }
+
+        // ---------- WEBHOOK SENDER (improved) ----------
+        async function sendOrderToWebhook(data) {
+            appendMessage("Saving order to backend...", false);
+            const controller = new AbortController();
+            const timeout = setTimeout(()=>controller.abort(), REQUEST_TIMEOUT_MS);
+
+            const headers = { "Content-Type": "application/json" };
+            if (SECRET_HEADER_VALUE) headers["x-order-secret"] = SECRET_HEADER_VALUE;
+
+            try {
+                const resp = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        userId: USER_ID,
+                        timestamp: new Date().toISOString(),
+                        customerName: data.name || "",
+                        mobile: data.mobile || "",
+                        address: data.address || "",
+                        order: data.orderItems || []
+                    }),
+                    mode: "cors",
+                    cache: "no-store",
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeout);
+
+                let text = "";
+                try { text = await resp.text(); } catch(e){ text = ""; }
+
+                if (!resp.ok) {
+                    console.error('Webhook failed', resp.status, text);
+                    appendMessage(`⚠️ Failed to save order (status ${resp.status}). Please check the console.`, false, ["Start New Order"]);
+                    return { ok:false, status: resp.status, body: text };
+                }
+
+                appendMessage("✅ Order successfully placed and sent to the system!", false, ["Start New Order"]);
+                if (text) console.log(`Server Response: ${text}`);
+                return { ok:true, status: resp.status, body: text };
+
+            } catch (err) {
+                clearTimeout(timeout);
+                if (err.name === "AbortError") {
+                    appendMessage("⚠️ Save timed out after 25s. Try again or check the webhook URL.", false, ["Start New Order"]);
+                    return { ok:false, error: "timeout" };
+                }
+                console.error("Network error sending webhook:", err);
+                appendMessage("⚠️ Network error while saving order. Check console for details.", false, ["Start New Order"]);
+                return { ok:false, error: err.message || err };
+            }
+        }
+
+        // ---------- BUSINESS LOGIC ----------
+        function getMenuText() {
+            let menu = "नमस्ते! Welcome. Here is the current rate list:\n\n";
+            MENU.forEach(item => { menu += `• ${item.name} - ${item.price} Rs/${item.unit}\n`; });
+            menu += `\nYou can add up to ${MAX_ITEMS} items to your order.`;
+            menu += "\nClick the *Select Items* button below to choose what you need.";
+            return menu;
+        }
+
+        function generateSummary(data) {
+            let summary = "🎉 *Order Confirmation* 🎉\n\n";
+            summary += "*Customer Details:*\n";
+            summary += `Name: ${data.name}\nMobile: ${data.mobile}\nAddress: ${data.address}\n\n`;
+            summary += "*Order Items:*\n";
+            let total = 0;
+            data.orderItems.forEach(item => {
+                const cost = item.quantity * item.price;
+                const displayUnit = item.unit.includes('kg') ? 'kg' : 'L';
+                summary += `• ${item.name}: ${item.quantity}${displayUnit} @ Rs ${item.price} = Rs ${cost.toFixed(2)}\n`;
+                total += cost;
+            });
+            summary += `\n---\n*Total Amount: Rs ${total.toFixed(2)}*\n\nYour order has been sent to our system. Thank you for shopping with us!`;
+            return summary;
+        }
+
+        function showItemSelectionMenu() {
+            let currentOrder = "";
+            let replies = [];
+            
+            const itemCount = orderData.orderItems.length;
+            const remainingItems = MAX_ITEMS - itemCount;
+            
+            if (itemCount < MAX_ITEMS) {
+                replies = MENU.map(i => i.name);
+            }
+            
+            if (itemCount > 0) {
+                currentOrder = "🛒 Your current order:\n" + orderData.orderItems.map(i => `• ${i.quantity}${i.unit.includes('kg') ? 'kg' : 'L'} ${i.name}`).join('\n') + "\n\n";
+            }
+            
+            let systemMessage = `What else would you like to order? Select an item below. (You can add ${remainingItems} more items).`;
+
+            if (itemCount >= MAX_ITEMS) {
+                replies = ["Done Ordering"];
+                systemMessage = `🛑 You have reached the maximum of ${MAX_ITEMS} items. Please click "Done Ordering" to proceed.`;
+            } else if (itemCount > 0) {
+                replies.push("Done Ordering");
+            }
+            
+            appendMessage(currentOrder + systemMessage, false, replies);
+            updateState(STATES.ORDERING);
+        }
+
+        function openNameModal() { toggleInputInteraction(true); CUSTOMER_NAME_INPUT.value = orderData.name || ''; NAME_MODAL.showModal(); }
+        function handleNameSubmit() {
+            const name = CUSTOMER_NAME_INPUT.value.trim();
+            if (name.length < 3) { console.warn("Name too short!"); return; }
+            NAME_MODAL.close();
+            toggleInputInteraction(false);
+            sendMessage('NAME_SUBMIT:' + name, name);
+        }
+        function openMobileModal() { toggleInputInteraction(true); CUSTOMER_MOBILE_INPUT.value = orderData.mobile || ''; MOBILE_MODAL.showModal(); }
+        function handleMobileSubmit() {
+            const mobile = CUSTOMER_MOBILE_INPUT.value.trim();
+            if (!/^\d{10}$/.test(mobile)) { console.warn("Invalid mobile number"); return; }
+            MOBILE_MODAL.close();
+            toggleInputInteraction(false);
+            sendMessage('MOBILE_SUBMIT:' + mobile, mobile);
+        }
+
+        // Three-dot menu functions
+        function toggleDropdown() {
+            DROPDOWN_MENU.classList.toggle('hidden');
+        }
+
+        function downloadApp() {
+            DROPDOWN_MENU.classList.add('hidden');
+            document.getElementById('download-modal').showModal();
+        }
+        
+        function showHelp() {
+            appendMessage("💡 Help: You can order up to 5 unique items. Select items from the menu, specify quantities, and provide your details to complete the order. Use 'Done Ordering' when finished.", false);
+            DROPDOWN_MENU.classList.add('hidden');
+        }
+        
+        function resetOrder() {
+            orderData = { orderItems: [], name: '', mobile: '', address: '' };
+            updateItemCounter();
+            appendMessage("🔄 Order has been completely reset. Starting fresh...", false);
+            handleSystemResponse('Start');
+            DROPDOWN_MENU.classList.add('hidden');
+        }
+
+        // CORE state handler
+        async function handleSystemResponse(messageText) {
+            
+            toggleInputInteraction(true); 
+            showTypingIndicator();
+
+            try {
+                await new Promise(r=>setTimeout(r, 600));
+                removeTypingIndicator();
+
+                const input = (messageText || "").trim();
+
+                // Global commands
+                if (input === 'Start' || input === 'Start New Order') {
+                    orderData = { orderItems: [], name: '', mobile: '', address: '' };
+                    tempSelectedItem = null;
+                    updateItemCounter();
+                    appendMessage(getMenuText(), false);
+                    updateState(STATES.ORDERING);
+                    return;
+                }
+                if (input === 'Select Items' || input === 'VIEW_MENU') { 
+                    showItemSelectionMenu(); 
+                    return; 
+                }
+                if (input === 'Done Ordering') {
+                    if (orderData.orderItems.length === 0) { 
+                        appendMessage("Your order is empty. Please select items first.", false, ["Select Items"]); 
+                    } else { 
+                        let orderListText = "Order Summary so far:\n" + orderData.orderItems.map(i => `• ${i.quantity}${i.unit.includes('kg') ? 'kg' : 'L'} ${i.name}`).join('\n'); 
+                        appendMessage(`Great! I recorded your order.\n\n${orderListText}\n\nNext, please type your full name into the input field or click the button below.`, false, ["Enter Name"]); 
+                        updateState(STATES.ASK_NAME); 
+                    }
+                    return;
+                }
+                if (input === 'Item Limit Reached') {
+                    appendMessage(`You've reached the maximum of ${MAX_ITEMS} items. Please click "Done Ordering" to proceed.`, false, ["Done Ordering"]);
+                    return;
+                }
+                // Internal commands for modal interaction
+                if (messageText.startsWith('NAME_SUBMIT:')) { 
+                    orderData.name = messageText.substring('NAME_SUBMIT:'.length); 
+                    appendMessage(`Thank you, ${orderData.name}! Now provide your 10-digit mobile number.`, false, ["Enter Mobile Number"]); 
+                    updateState(STATES.ASK_MOBILE); 
+                    return; 
+                }
+                if (messageText.startsWith('MOBILE_SUBMIT:')) { 
+                    orderData.mobile = messageText.substring('MOBILE_SUBMIT:'.length); 
+                    appendMessage("Got it! Finally, please share your full delivery address.", false, ["Enter Address"]); 
+                    updateState(STATES.ASK_ADDRESS); 
+                    return; 
+                }
+
+                // State-specific
+                switch (currentState) {
+                    case STATES.WELCOME:
+                        await handleSystemResponse('Start');
+                        break;
+
+                    case STATES.ORDERING: {
+                        if (orderData.orderItems.length >= MAX_ITEMS) {
+                             appendMessage(`🛑 Order limit of ${MAX_ITEMS} items reached. Please click 'Done Ordering'.`, false, ["Done Ordering"]);
+                             break;
+                        }
+
+                        const selectedItem = MENU.find(item => item.name === input);
+                        if (selectedItem) {
+                            tempSelectedItem = selectedItem.id;
+                            const itemDisplayName = selectedItem.name.split(' / ')[0].trim();
+                            const unit = selectedItem.unit.includes('Litre') ? 'Litres' : 'Kgs';
+                            const quantityPresets = selectedItem.isLiquid ? LIQUID_PRESETS : SOLID_PRESETS;
+                            appendMessage(`How many ${unit} of ${itemDisplayName}? Select quantity or type a custom amount.`, false, quantityPresets);
+                            updateState(STATES.SELECTING_ITEM_QTY);
+                        } else {
+                            appendMessage("Please use 'Select Items' button or 'Done Ordering' or select a listed item.", false);
+                        }
+                        break;
+                    }
+
+                    case STATES.SELECTING_ITEM_QTY: {
+                        const quantity = parseFloat(input);
+                        const selectedItemDetails = MENU.find(i => i.id === tempSelectedItem);
+                        if (!selectedItemDetails) { 
+                            appendMessage("Item selection lost. Please select an item again.", false, ["Select Items"]); 
+                            updateState(STATES.ORDERING); 
+                            break; 
+                        }
+
+                        const unit = selectedItemDetails.unit.includes('Litre') ? 'Litres' : 'Kgs';
+                        if (isNaN(quantity) || quantity <= 0) {
+                            const qPresets = selectedItemDetails.isLiquid ? LIQUID_PRESETS : SOLID_PRESETS;
+                            appendMessage(`Invalid quantity (${input}). Please enter a valid number in ${unit}.`, false, qPresets);
+                            break;
+                        }
+
+                        // Add item to order
+                        orderData.orderItems.push({
+                            name: selectedItemDetails.name.split(' / ')[0].trim(),
+                            quantity: quantity,
+                            unit: selectedItemDetails.unit,
+                            price: selectedItemDetails.price
+                        });
+
+                        tempSelectedItem = null;
+                        updateItemCounter();
+                        appendMessage(`Added ${quantity}${selectedItemDetails.unit} of ${selectedItemDetails.name.split(' / ')[0].trim()} to your order.`, false);
+                        
+                        // Check if we've reached the limit
+                        if (orderData.orderItems.length >= MAX_ITEMS) {
+                            appendMessage(`You've reached the maximum of ${MAX_ITEMS} items.`, false, ["Done Ordering"]);
+                        } else {
+                            showItemSelectionMenu();
+                        }
+                        break;
+                    }
+
+                    case STATES.ASK_NAME:
+                        if ((messageText || "").length < 3) { appendMessage("Please type at least 3 characters for your name.", false, ["Enter Name"]); break; }
+                        orderData.name = messageText;
+                        appendMessage(`Thank you, ${orderData.name}! Now provide your 10-digit mobile number.`, false, ["Enter Mobile Number"]); 
+                        updateState(STATES.ASK_MOBILE);
+                        break;
+
+                    case STATES.ASK_MOBILE: {
+                        const match = (messageText || "").match(/^\d{10}$/);
+                        if (!match) { appendMessage("That is not a valid 10-digit number. Please try again.", false, ["Enter Mobile Number"]); break; }
+                        orderData.mobile = messageText;
+                        appendMessage("Got it! Finally, please share your full delivery address.", false, ["Enter Address"]);
+                        updateState(STATES.ASK_ADDRESS);
+                        break;
+                    }
+
+                    case STATES.ASK_ADDRESS:
+                        if ((messageText || "").length < 10) { appendMessage("Address seems too short. Please include street, city and pincode.", false, ["Enter Address"]); break; }
+                        orderData.address = messageText;
+                        
+                        const summary = generateSummary(orderData);
+                        appendMessage(summary, false);
+                        await sendOrderToWebhook(orderData);
+                        updateState(STATES.CONFIRMATION);
+                        break;
+
+                    case STATES.CONFIRMATION:
+                        appendMessage("Order complete. Click 'Start New Order' to begin a new request.", false, ["Start New Order"]);
+                        updateState(STATES.WELCOME);
+                        break;
+                }
+            } catch (err) {
+                console.error('handleSystemResponse error', err);
+                appendMessage("System error occurred. Try starting a new order.", false, ["Start New Order"]);
+            } finally {
+                toggleInputInteraction(false);
+            }
+        }
+
+        // sendMessage wrapper
+        async function sendMessage(messageText, uiDisplayMessage) {
+            messageText = messageText || MESSAGE_INPUT.value.trim();
+            uiDisplayMessage = uiDisplayMessage || messageText;
+            if (!messageText) { MESSAGE_INPUT.focus(); return; }
+            
+            MESSAGE_INPUT.value = '';
+            appendMessage(uiDisplayMessage, true);
+            
+            await handleSystemResponse(messageText);
+        }
+
+        // Init after DOM ready
+        window.addEventListener('DOMContentLoaded', () => {
+            MESSAGES_CONTAINER = document.querySelector('#messages-container > .flex.flex-col');
+            MESSAGE_INPUT = document.getElementById('message-input');
+            SEND_BUTTON = document.getElementById('send-button');
+            PRESET_BUTTON = document.getElementById('preset-button');
+            BOT_STATUS = document.getElementById('bot-status');
+            ITEM_COUNTER = document.getElementById('item-counter');
+            NAME_MODAL = document.getElementById('name-modal');
+            CUSTOMER_NAME_INPUT = document.getElementById('customer-name-input');
+            MOBILE_MODAL = document.getElementById('mobile-modal');
+            CUSTOMER_MOBILE_INPUT = document.getElementById('customer-mobile-input');
+            MENU_BUTTON = document.getElementById('menu-button');
+            DROPDOWN_MENU = document.getElementById('dropdown-menu');
+            
+            // Expose global functions to HTML
+            window.handleNameSubmit = handleNameSubmit;
+            window.handleMobileSubmit = handleMobileSubmit;
+            window.sendMessage = sendMessage;
+            window.usePreset = usePreset;
+            window.downloadApp = downloadApp;
+            window.showHelp = showHelp;
+            window.resetOrder = resetOrder;
+
+            // Set up menu listener
+            MENU_BUTTON.addEventListener('click', toggleDropdown);
+            document.addEventListener('click', (event) => {
+                if (!MENU_BUTTON.contains(event.target) && !DROPDOWN_MENU.contains(event.target)) {
+                    DROPDOWN_MENU.classList.add('hidden');
+                }
+            });
+
+            // Start the application
+            updateState(STATES.WELCOME);
+            handleSystemResponse('Start');
+            toggleInputInteraction(false);
+
+            window.onresize = () => toggleInputInteraction(SEND_BUTTON.disabled);
+        });
+    </script>
+</body>
+</html>
