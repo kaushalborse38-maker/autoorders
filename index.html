@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>WhatsApp Order System - Mobile Optimized (Fixed Layout)</title>
+    <title>WhatsApp Order System - Compact Layout</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
@@ -25,13 +25,13 @@
     </script>
 
     <style>
-        /* ---------- Layout fixes: Fixed Viewport Height and Overflow Control (reduced gaps) ---------- */
+        /* ---------- Very compact fixed layout ---------- */
         html, body {
             margin: 0;
             padding: 0;
-            height: 100vh; /* 100% of viewport height */
+            height: 100vh;
             width: 100%;
-            overflow: hidden; /* Prevents scrolling on the entire page */
+            overflow: hidden;
             box-sizing: border-box;
             font-family: 'Inter', sans-serif;
             background-color: #DADBD3;
@@ -42,7 +42,6 @@
             width: 100%;
             display: flex;
             flex-direction: column;
-            /* reduce any extra outer gap */
             padding: 0;
         }
 
@@ -51,26 +50,25 @@
             display: flex;
             flex-direction: column;
             background: white;
-            min-height: 0; /* allows children to scroll correctly */
-            position: relative; /* for floating preset button */
-            border-radius: 0.5rem; /* slightly smaller radius to reduce perceived gap */
+            min-height: 0;
+            position: relative;
+            border-radius: 6px;
         }
 
-        /* smaller margins for larger screens so gap is less obvious */
         @media (min-width: 768px) {
             #app {
                 height: 95vh;
-                max-width: 600px;
-                border-radius: 0.5rem;
-                margin: 8px auto; /* reduced from 20px */
-                box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.18);
+                max-width: 620px;
+                border-radius: 6px;
+                margin: 6px auto; /* very small outer gap */
+                box-shadow: 0 18px 36px -14px rgba(0,0,0,0.18);
             }
-            #chat-window { border-radius: 0.5rem; }
-            #message-input { font-size: 16px; }
+            #chat-window { border-radius: 6px; }
         }
 
+        /* Header */
         #chat-header {
-            padding: 10px 10px;
+            padding: 8px 10px;
             background: #075E54;
             color: #fff;
             display: flex;
@@ -79,24 +77,23 @@
             position: sticky;
             top: 0;
             z-index: 30;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.10);
         }
 
-        /* Messages container - THIS is the only scrollable area (internal scrolling) */
+        /* Messages container: even more compact padding and smaller bottom space */
         #messages-container {
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start; /* ensure top aligned */
+            justify-content: flex-start;
             align-items: stretch;
             overflow-y: auto;
             background-color: #E5DDD5;
-            padding: 8px; /* reduced from 16px */
-            padding-bottom: calc(8px + 88px); /* leave space for floating preset + input bar, reduced */
-            min-height: 0; /* important for flex children to allow scrolling */
+            padding: 6px; /* less space */
+            padding-bottom: calc(6px + 64px); /* small bottom space reserved for input row */
+            min-height: 0;
         }
 
-        /* keep messages column stretching full width and stacking from top */
         #messages-column {
             display: flex;
             flex-direction: column;
@@ -111,11 +108,11 @@
 
         .message-wrapper { margin: 0; display:flex; width: 100%; }
         .message-bubble {
-            padding: 10px 12px; /* slightly smaller padding to reduce bubble-to-edge gap */
+            padding: 8px 10px; /* slightly smaller */
             border-radius: 10px;
             max-width: 88%;
-            box-shadow: 0 6px 14px rgba(0,0,0,0.06);
-            line-height: 1.45;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.05);
+            line-height: 1.4;
             font-size: 15px;
             word-break: break-word;
         }
@@ -126,7 +123,7 @@
             display: flex;
             justify-content: flex-end;
             align-items: center;
-            margin-top: 8px;
+            margin-top: 6px;
             gap: 6px;
             color: #666;
             font-size: 11px;
@@ -135,8 +132,8 @@
 
         .quick-reply-container { margin-top: 8px; display:flex; flex-wrap:wrap; gap:8px; }
         .quick-reply-button {
-            padding: 8px 14px;
-            border-radius: 20px;
+            padding: 7px 12px;
+            border-radius: 18px;
             border: 1px solid #C4C4C4;
             background: #F8F8F8;
             cursor:pointer;
@@ -144,11 +141,12 @@
             color:#128C7E;
             white-space:nowrap;
             transition: background-color 0.1s;
+            font-size: 14px;
         }
         .quick-reply-button:hover { background: #E8E8E8; }
         .done-ordering-button { background-color:#25D366 !important; color:#fff !important; border-color:#075E54 !important; font-weight:700; }
 
-        /* input area */
+        /* Input bar: everything in one row (preset button + input + send) */
         #input-bar {
             padding: 8px;
             background: #f5f5f5;
@@ -158,50 +156,55 @@
             border-top: 1px solid #e6e6e6;
             flex-shrink:0;
             z-index: 35;
-            position: relative;
         }
+
+        /* make preset button visible and compact */
+        #preset-button {
+            white-space:nowrap;
+            flex-shrink: 0;
+            padding: 8px 12px;
+            background: #333333;
+            color: white;
+            border-radius: 999px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+            font-size: 13px;
+        }
+
+        #preset-button.hidden { display: none !important; }
+
         #message-input {
             flex:1;
             padding: 10px 12px;
             border-radius: 999px;
             border:none;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.06);
             min-width: 0;
             background: #fff;
+            font-size: 15px;
         }
-        #send-button { width:44px; height:44px; border-radius:999px; display:flex; align-items:center; justify-content:center; }
-        .preset-btn { white-space:nowrap; }
-
-        /* Floating preset button (moved above input) */
-        #floating-preset {
-            position: absolute;
-            left: 12px;
-            bottom: 66px; /* reduced to bring it closer to input bar */
-            z-index: 40;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 9px 12px;
-            border-radius: 999px;
-            background: #333333;
-            color: white;
-            font-weight: 600;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-            cursor: pointer;
-            transition: transform .12s;
+        #send-button {
+            width:44px; height:44px; border-radius:999px; display:flex; align-items:center; justify-content:center;
+            background: #25D366; border: none; color:white; cursor:pointer;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
         }
-        #floating-preset:active { transform: scale(.98); }
 
-        /* ensure the original PRESET button (in markup) is hidden to avoid duplication */
-        .preset-placeholder { display: none; }
+        /* small responsive tweak to keep everything compact on very small widths */
+        @media (max-width: 350px) {
+            #preset-button { padding: 6px 10px; font-size: 12px; }
+            #message-input { font-size: 14px; }
+            #send-button { width:40px; height:40px; }
+        }
 
-        dialog { border: none; padding: 2rem; border-radius: 1.5rem; box-shadow: 0 15px 35px rgba(0,0,0,0.3); max-width: 90%; width: 450px; animation: fadeIn 0.3s ease-out; }
-        @media (max-width: 767px) { dialog { width: calc(100% - 32px); margin: 16px; padding: 1.5rem; border-radius: 1rem; } }
-        dialog::backdrop { background: rgba(0,0,0,0.6); }
+        dialog { border: none; padding: 2rem; border-radius: 1.2rem; box-shadow: 0 12px 28px rgba(0,0,0,0.25); max-width: 90%; width: 420px; animation: fadeIn 0.2s ease-out; }
+        @media (max-width: 767px) { dialog { width: calc(100% - 32px); margin: 12px; padding: 1.2rem; border-radius: 1rem; } }
+        dialog::backdrop { background: rgba(0,0,0,0.45); }
 
-        .typing-dot { width:8px; height:8px; border-radius:50%; background:#999; margin:0 3px; animation: typing 1.4s infinite ease-in-out; }
+        .typing-dot { width:7px; height:7px; border-radius:50%; background:#999; margin:0 3px; animation: typing 1.4s infinite ease-in-out; }
         .typing-dot:nth-child(1){ animation-delay:0s } .typing-dot:nth-child(2){ animation-delay:.2s } .typing-dot:nth-child(3){ animation-delay:.4s }
-        @keyframes typing { 0%,60%,100%{ transform: translateY(0) } 30%{ transform: translateY(-5px) } }
+        @keyframes typing { 0%,60%,100%{ transform: translateY(0) } 30%{ transform: translateY(-4px) } }
     </style>
 </head>
 <body>
@@ -210,8 +213,8 @@
             <!-- Header (fixed) -->
             <div id="chat-header">
                 <div class="flex items-center min-w-0 flex-1">
-                    <div class="w-10 h-10 rounded-full bg-whatsapp-light flex items-center justify-center font-semibold text-lg mr-3 shadow-md flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                    <div class="w-9 h-9 rounded-full bg-whatsapp-light flex items-center justify-center font-semibold text-lg mr-3 shadow-md flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                     </div>
                     <div class="min-w-0 flex-1">
                         <p class="font-bold truncate">Automated Grocery Order Bot</p>
@@ -226,9 +229,9 @@
                 <!-- Three dots menu -->
                 <div class="relative flex-shrink-0 ml-2">
                     <button id="menu-button" class="p-2 rounded-full hover:bg-white/10 transition-colors" aria-label="More options">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                     </button>
-                    <!-- Dropdown Menu -->
+                    <!-- Dropdown -->
                     <div id="dropdown-menu" class="dropdown-menu hidden">
                         <div class="dropdown-item" onclick="downloadApp()">
                             <i class="fas fa-download text-whatsapp-dark"></i>
@@ -246,28 +249,21 @@
                 </div>
             </div>
 
-            <!-- Messages (This container scrolls internally and auto-scrolls to bottom) -->
+            <!-- Messages -->
             <div id="messages-container">
                 <div id="messages-column" class="flex flex-col"></div>
             </div>
 
-            <!-- Floating preset button placed above input (moved up visually) -->
-            <button id="floating-preset" title="Quick Action">Select Items</button>
-
-            <!-- Input Bar (fixed) -->
+            <!-- Input Bar: preset button + input + send in one line -->
             <div id="input-bar">
-                <!-- original preset placeholder (kept but hidden so JS selectors unaffected) -->
-                <button id="preset-button" class="preset-placeholder preset-btn flex-shrink-0 p-2 text-sm font-semibold text-white bg-preset-bg hover:bg-black/80 rounded-full transition duration-150 shadow-md items-center justify-center h-10 transform hover:scale-[1.02] whitespace-nowrap">
-                    Start Order
-                </button>
+                <button id="preset-button" class="preset-btn">Select Items</button>
 
                 <input id="message-input" type="text" placeholder="Use buttons to select options"
-                       class="rounded-full border-none bg-white focus:outline-none focus:ring-2 focus:ring-whatsapp-dark transition-all duration-150"
+                       class="rounded-full border-none bg-white focus:outline-none focus:ring-0 transition-all duration-150"
                        readonly>
 
-                <button id="send-button" onclick="sendMessage()"
-                        class="flex-shrink-0 ml-2 bg-whatsapp-light hover:bg-whatsapp-dark text-white p-3 rounded-full transition duration-150 transform hover:scale-105 shadow-xl w-12 h-12 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transform -rotate-45 ml-1">
+                <button id="send-button" onclick="sendMessage()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transform -rotate-45">
                         <line x1="22" y1="2" x2="11" y2="13"></line>
                         <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                     </svg>
@@ -311,18 +307,17 @@
     </dialog>
 
     <script>
-        // ---------- Config (unchanged) ----------
+        // ---------- Config ----------
         const WEBHOOK_URL = "https://borsekaushal.app.n8n.cloud/webhook/order-system-webhook";
         const REQUEST_TIMEOUT_MS = 25000;
         const SECRET_HEADER_VALUE = "";
         const MAX_ITEMS = 5;
 
-        // DOM refs (set later)
+        // DOM refs
         let MESSAGES_COLUMN;
-        let MESSAGES_CONTAINER; // the scrollable container
+        let MESSAGES_CONTAINER;
         let MESSAGE_INPUT, SEND_BUTTON, PRESET_BUTTON, BOT_STATUS, NAME_MODAL, CUSTOMER_NAME_INPUT, MOBILE_MODAL, CUSTOMER_MOBILE_INPUT, ITEM_COUNTER;
         let MENU_BUTTON, DROPDOWN_MENU;
-        let FLOATING_PRESET;
 
         // STATE
         const USER_ID = 'User_' + Math.random().toString(36).substring(2,9);
@@ -343,7 +338,7 @@
         let typingIndicatorElement = null;
         let tempSelectedItem = null;
 
-        // ---------- UTILITIES ----------
+        // UTILITIES
         function toggleInputInteraction(isDisabled) {
             SEND_BUTTON.disabled = isDisabled;
             MESSAGE_INPUT.disabled = isDisabled;
@@ -354,21 +349,13 @@
             if (keyboardStates.includes(currentState)) {
                 MESSAGE_INPUT.readOnly = false;
                 MESSAGE_INPUT.placeholder = "Type your response...";
-                // Hide floating preset when keyboard input is active
-                FLOATING_PRESET.classList.add('hidden');
-
+                PRESET_BUTTON.classList.add('hidden');
             } else {
                 MESSAGE_INPUT.readOnly = true;
                 MESSAGE_INPUT.placeholder = "Use buttons to select options";
-
-                const isMobile = window.innerWidth < 768;
-                const shouldShowPreset = isMobile || !isDisabled;
-
-                if (shouldShowPreset) {
-                    FLOATING_PRESET.classList.remove('hidden');
-                } else {
-                    FLOATING_PRESET.classList.add('hidden');
-                }
+                // show/hide preset button depending on state
+                if (window.innerWidth < 768) PRESET_BUTTON.classList.remove('hidden');
+                else PRESET_BUTTON.classList.remove('hidden');
             }
 
             if (!isDisabled && !NAME_MODAL.open && !MOBILE_MODAL.open && keyboardStates.includes(currentState)) {
@@ -396,20 +383,17 @@
             let presetText = "Start Order";
             let presetAction = "Start";
 
-            // Wire both floating button and hidden preset placeholder (for compatibility)
             const setClick = () => {
                 if (currentState === STATES.ORDERING) handleSystemResponse("VIEW_MENU");
                 else usePreset(presetAction);
             };
 
-            FLOATING_PRESET.onclick = setClick;
             PRESET_BUTTON.onclick = setClick;
 
             if (currentState === STATES.WELCOME) {
                 presetText = "Start Order";
                 presetAction = "Start";
-            }
-            else if (currentState === STATES.ORDERING) {
+            } else if (currentState === STATES.ORDERING) {
                 presetText = "Select Items";
                 if (orderData.orderItems.length >= MAX_ITEMS) {
                     presetText = "Done Ordering";
@@ -418,16 +402,15 @@
                     presetAction = "VIEW_MENU";
                 }
             } else if (currentState === STATES.SELECTING_ITEM_QTY) {
-                FLOATING_PRESET.classList.add('hidden');
                 PRESET_BUTTON.classList.add('hidden');
                 return;
             } else if (currentState === STATES.CONFIRMATION) {
                 presetText = "Place New Order"; presetAction = "Start New Order";
             }
 
-            FLOATING_PRESET.textContent = presetText;
             PRESET_BUTTON.textContent = presetText;
             PRESET_BUTTON.title = presetText;
+            PRESET_BUTTON.classList.remove('hidden');
         }
 
         function usePreset(message) {
@@ -474,7 +457,7 @@
             wrapper.appendChild(bubble);
             MESSAGES_COLUMN.appendChild(wrapper);
 
-            // Scroll to bottom
+            // scroll to bottom
             MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
         }
 
@@ -505,7 +488,7 @@
             if (indicator) { indicator.remove(); typingIndicatorElement = null; }
         }
 
-        // ---------- Webhook sender (unchanged) ----------
+        // Webhook sender (same)
         async function sendOrderToWebhook(data) {
             appendMessage("Saving order to backend...", false);
             const controller = new AbortController();
@@ -558,7 +541,7 @@
             }
         }
 
-        // ---------- Business logic (unchanged) ----------
+        // Business logic (same)
         function getMenuText() {
             let menu = "नमस्ते! Welcome. Here is the current rate list:\n\n";
             MENU.forEach(item => { menu += `• ${item.name} - ${item.price} Rs/${item.unit}\n`; });
@@ -635,7 +618,7 @@
             DROPDOWN_MENU.classList.add('hidden');
         }
 
-        // CORE state handler (kept intact)
+        // CORE handler
         async function handleSystemResponse(messageText) {
             toggleInputInteraction(true);
             showTypingIndicator();
@@ -793,14 +776,13 @@
             await handleSystemResponse(messageText);
         }
 
-        // Init after DOM ready
+        // Init
         window.addEventListener('DOMContentLoaded', () => {
             MESSAGES_COLUMN = document.getElementById('messages-column');
-            MESSAGES_CONTAINER = document.getElementById('messages-container'); // scrollable container
+            MESSAGES_CONTAINER = document.getElementById('messages-container');
             MESSAGE_INPUT = document.getElementById('message-input');
             SEND_BUTTON = document.getElementById('send-button');
             PRESET_BUTTON = document.getElementById('preset-button');
-            FLOATING_PRESET = document.getElementById('floating-preset');
             BOT_STATUS = document.getElementById('bot-status');
             ITEM_COUNTER = document.getElementById('item-counter');
             NAME_MODAL = document.getElementById('name-modal');
@@ -826,12 +808,11 @@
                 }
             });
 
-            // Set initial state for button and start conversation
+            // initial
             updateState(STATES.WELCOME);
             handleSystemResponse('Start');
             toggleInputInteraction(false);
 
-            // adapt visibility on resize
             window.onresize = () => toggleInputInteraction(SEND_BUTTON.disabled);
         });
     </script>
