@@ -26,7 +26,6 @@
 
     <style>
         /* ---------- Layout fixes: Fixed Viewport Height and Overflow Control ---------- */
-        /* Ensures the whole screen does not scroll, maintaining fixed header and input bar */
         html, body {
             margin: 0;
             padding: 0;
@@ -38,21 +37,20 @@
             background-color: #DADBD3;
         }
 
-        /* Ensures the app container uses the full fixed height */
         #app {
-            height: 100vh; 
+            height: 100vh;
             width: 100%;
             display: flex;
             flex-direction: column;
         }
 
-        /* Chat window uses full height and vertical flow */
         #chat-window {
             flex: 1;
             display: flex;
             flex-direction: column;
             background: white;
             min-height: 0; /* allows children to scroll correctly */
+            position: relative; /* for floating preset button */
         }
 
         @media (min-width: 768px) {
@@ -67,7 +65,6 @@
             #message-input { font-size: 16px; }
         }
 
-        /* Header: fixed at top of chat-window */
         #chat-header {
             padding: 12px 12px;
             background: #075E54;
@@ -84,19 +81,31 @@
         /* Messages container - THIS is the only scrollable area (internal scrolling) */
         #messages-container {
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* ensure top aligned */
+            align-items: stretch;
             overflow-y: auto;
             background-color: #E5DDD5;
             padding: 16px;
+            padding-bottom: calc(16px + 120px); /* leave space for floating preset + input bar */
             min-height: 0; /* important for flex children to allow scrolling */
         }
 
-        /* Scrollbar styling (fine) */
+        /* keep messages column stretching full width and stacking from top */
+        #messages-column {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: flex-start;
+            width: 100%;
+        }
+
         #messages-container::-webkit-scrollbar { width: 6px; }
         #messages-container::-webkit-scrollbar-thumb { background-color: #a8a8a8; border-radius: 3px; }
         #messages-container::-webkit-scrollbar-track { background: transparent; }
 
-        /* Message wrapper and bubble styles */
-        .message-wrapper { margin: 6px 0; display:flex; }
+        .message-wrapper { margin: 0; display:flex; width: 100%; }
         .message-bubble {
             padding: 12px 14px;
             border-radius: 12px;
@@ -109,7 +118,6 @@
         .sent { background: #DCF8C6; align-self: flex-end; border-bottom-right-radius: 4px; }
         .received { background: #fff; align-self: flex-start; border-top-left-radius: 4px; }
 
-        /* time / checkmark row at the bottom of bubble */
         .bubble-meta {
             display: flex;
             justify-content: flex-end;
@@ -121,7 +129,6 @@
         }
         .bubble-meta svg { width: 14px; height: 14px; }
 
-        /* quick replies container */
         .quick-reply-container { margin-top: 8px; display:flex; flex-wrap:wrap; gap:8px; }
         .quick-reply-button {
             padding: 8px 14px;
@@ -134,15 +141,8 @@
             white-space:nowrap;
             transition: background-color 0.1s;
         }
-        .quick-reply-button:hover {
-            background: #E8E8E8;
-        }
-        .done-ordering-button { 
-            background-color:#25D366 !important; 
-            color:#fff !important; 
-            border-color:#075E54 !important; 
-            font-weight:700; 
-        }
+        .quick-reply-button:hover { background: #E8E8E8; }
+        .done-ordering-button { background-color:#25D366 !important; color:#fff !important; border-color:#075E54 !important; font-weight:700; }
 
         /* input area */
         #input-bar {
@@ -153,6 +153,8 @@
             gap:8px;
             border-top: 1px solid #e6e6e6;
             flex-shrink:0;
+            z-index: 35;
+            position: relative;
         }
         #message-input {
             flex:1;
@@ -166,12 +168,33 @@
         #send-button { width:44px; height:44px; border-radius:999px; display:flex; align-items:center; justify-content:center; }
         .preset-btn { white-space:nowrap; }
 
-        /* dialog small tweaks unchanged from your original but kept here */
+        /* Floating preset button (moved above input) */
+        #floating-preset {
+            position: absolute;
+            left: 14px;
+            bottom: 72px; /* sits slightly above input bar */
+            z-index: 40;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: #333333;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+            cursor: pointer;
+            transition: transform .12s;
+        }
+        #floating-preset:active { transform: scale(.98); }
+
+        /* ensure the original PRESET button (in markup) is hidden to avoid duplication */
+        .preset-placeholder { display: none; }
+
         dialog { border: none; padding: 2rem; border-radius: 1.5rem; box-shadow: 0 15px 35px rgba(0,0,0,0.3); max-width: 90%; width: 450px; animation: fadeIn 0.3s ease-out; }
         @media (max-width: 767px) { dialog { width: calc(100% - 32px); margin: 16px; padding: 1.5rem; border-radius: 1rem; } }
         dialog::backdrop { background: rgba(0,0,0,0.6); }
 
-        /* typing dot animation kept */
         .typing-dot { width:8px; height:8px; border-radius:50%; background:#999; margin:0 3px; animation: typing 1.4s infinite ease-in-out; }
         .typing-dot:nth-child(1){ animation-delay:0s } .typing-dot:nth-child(2){ animation-delay:.2s } .typing-dot:nth-child(3){ animation-delay:.4s }
         @keyframes typing { 0%,60%,100%{ transform: translateY(0) } 30%{ transform: translateY(-5px) } }
@@ -224,11 +247,13 @@
                 <div id="messages-column" class="flex flex-col"></div>
             </div>
 
+            <!-- Floating preset button placed above input (moved up visually) -->
+            <button id="floating-preset" title="Quick Action">Select Items</button>
+
             <!-- Input Bar (fixed) -->
             <div id="input-bar">
-                <!-- PRESET BUTTON: Shows 'Start Order' or 'Select Items' -->
-                <button id="preset-button" title="Quick Action"
-                        class="preset-btn flex-shrink-0 p-2 text-sm font-semibold text-white bg-preset-bg hover:bg-black/80 rounded-full transition duration-150 shadow-md items-center justify-center h-10 transform hover:scale-[1.02] whitespace-nowrap">
+                <!-- original preset placeholder (kept but hidden so JS selectors unaffected) -->
+                <button id="preset-button" class="preset-placeholder preset-btn flex-shrink-0 p-2 text-sm font-semibold text-white bg-preset-bg hover:bg-black/80 rounded-full transition duration-150 shadow-md items-center justify-center h-10 transform hover:scale-[1.02] whitespace-nowrap">
                     Start Order
                 </button>
 
@@ -293,6 +318,7 @@
         let MESSAGES_CONTAINER; // the scrollable container
         let MESSAGE_INPUT, SEND_BUTTON, PRESET_BUTTON, BOT_STATUS, NAME_MODAL, CUSTOMER_NAME_INPUT, MOBILE_MODAL, CUSTOMER_MOBILE_INPUT, ITEM_COUNTER;
         let MENU_BUTTON, DROPDOWN_MENU;
+        let FLOATING_PRESET;
 
         // STATE
         const USER_ID = 'User_' + Math.random().toString(36).substring(2,9);
@@ -324,28 +350,22 @@
             if (keyboardStates.includes(currentState)) {
                 MESSAGE_INPUT.readOnly = false;
                 MESSAGE_INPUT.placeholder = "Type your response...";
-                // Hide preset button when keyboard input is active
-                PRESET_BUTTON.classList.add('hidden');
-                PRESET_BUTTON.classList.remove('flex');
+                // Hide floating preset when keyboard input is active
+                FLOATING_PRESET.classList.add('hidden');
 
             } else {
-                // Ensure input remains readOnly unless needed for keyboard entry
                 MESSAGE_INPUT.readOnly = true;
                 MESSAGE_INPUT.placeholder = "Use buttons to select options";
-                
-                // Show preset button when using quick select flow
+
                 const isMobile = window.innerWidth < 768;
                 const shouldShowPreset = isMobile || !isDisabled;
-            
+
                 if (shouldShowPreset) {
-                    PRESET_BUTTON.classList.remove('hidden');
-                    PRESET_BUTTON.classList.add('flex');
+                    FLOATING_PRESET.classList.remove('hidden');
                 } else {
-                    PRESET_BUTTON.classList.add('hidden');
-                    PRESET_BUTTON.classList.remove('flex');
+                    FLOATING_PRESET.classList.add('hidden');
                 }
             }
-
 
             if (!isDisabled && !NAME_MODAL.open && !MOBILE_MODAL.open && keyboardStates.includes(currentState)) {
                 MESSAGE_INPUT.focus();
@@ -372,34 +392,38 @@
             let presetText = "Start Order";
             let presetAction = "Start";
 
-            PRESET_BUTTON.onclick = () => {
+            // Wire both floating button and hidden preset placeholder (for compatibility)
+            const setClick = () => {
                 if (currentState === STATES.ORDERING) handleSystemResponse("VIEW_MENU");
                 else usePreset(presetAction);
             };
 
-            if (currentState === STATES.WELCOME) { 
-                presetText = "Start Order"; 
-                presetAction = "Start"; 
+            FLOATING_PRESET.onclick = setClick;
+            PRESET_BUTTON.onclick = setClick;
+
+            if (currentState === STATES.WELCOME) {
+                presetText = "Start Order";
+                presetAction = "Start";
             }
             else if (currentState === STATES.ORDERING) {
-                // Show 'Select Items' unless max items reached
                 presetText = "Select Items";
-                if (orderData.orderItems.length >= MAX_ITEMS) { 
-                    presetText = "Done Ordering"; 
-                    presetAction = "Done Ordering"; 
+                if (orderData.orderItems.length >= MAX_ITEMS) {
+                    presetText = "Done Ordering";
+                    presetAction = "Done Ordering";
                 } else {
                     presetAction = "VIEW_MENU";
                 }
             } else if (currentState === STATES.SELECTING_ITEM_QTY) {
-                // Hide the preset button when quick replies for quantity are shown in the chat area
+                FLOATING_PRESET.classList.add('hidden');
                 PRESET_BUTTON.classList.add('hidden');
-                PRESET_BUTTON.classList.remove('flex');
                 return;
             } else if (currentState === STATES.CONFIRMATION) {
                 presetText = "Place New Order"; presetAction = "Start New Order";
             }
-            
+
+            FLOATING_PRESET.textContent = presetText;
             PRESET_BUTTON.textContent = presetText;
+            PRESET_BUTTON.title = presetText;
         }
 
         function usePreset(message) {
@@ -408,7 +432,7 @@
             if (message === 'Enter Address') { MESSAGE_INPUT.readOnly = false; MESSAGE_INPUT.focus(); DROPDOWN_MENU.classList.add('hidden'); return; }
 
             MESSAGE_INPUT.value = message;
-            sendMessage(); 
+            sendMessage();
             DROPDOWN_MENU.classList.add('hidden');
         }
 
@@ -416,10 +440,6 @@
             return unsafe.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
         }
 
-        /**
-         * Appends a message and auto-scrolls to the bottom.
-         * This is the core function that ensures new chats are always visible.
-         */
         function appendMessage(text, isSent, quickReplies = []) {
             const time = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
@@ -437,7 +457,6 @@
                     const isDone = reply === "Done Ordering";
                     let customClass = '';
                     if (isDone) customClass = 'done-ordering-button';
-                    // Use usePreset for quick replies
                     contentHTML += `<button class="quick-reply-button ${customClass}" onclick="usePreset('${escapeHtml(reply)}')">${escapeHtml(reply)}</button>`;
                 });
                 contentHTML += `</div>`;
@@ -451,8 +470,7 @@
             wrapper.appendChild(bubble);
             MESSAGES_COLUMN.appendChild(wrapper);
 
-            // ******* CRITICAL FOR NO MANUAL SCROLLING *******
-            // Scrolls the messages container to the bottom to show the latest message
+            // Scroll to bottom
             MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
         }
 
@@ -567,8 +585,7 @@
             const itemCount = orderData.orderItems.length;
             const remainingItems = MAX_ITEMS - itemCount;
 
-            // In this state, we show the actual item names as quick replies in the chat bubble itself
-            if (itemCount < MAX_ITEMS) replies = MENU.map(i => i.name); 
+            if (itemCount < MAX_ITEMS) replies = MENU.map(i => i.name);
             if (itemCount > 0) {
                 currentOrder = "🛒 Your current order:\n" + orderData.orderItems.map(i => `• ${i.quantity}${i.unit.includes('kg') ? 'kg' : 'L'} ${i.name}`).join('\n') + "\n\n";
             }
@@ -630,16 +647,13 @@
                     orderData = { orderItems: [], name: '', mobile: '', address: '' };
                     tempSelectedItem = null;
                     updateItemCounter();
-                    // Initial welcome message. We do NOT pass quick replies here, 
-                    // as the "Select Items" action is now handled by the PRESET_BUTTON.
-                    appendMessage(getMenuText(), false); 
+                    appendMessage(getMenuText(), false);
                     updateState(STATES.ORDERING);
                     return;
                 }
                 if (input === 'Select Items' || input === 'VIEW_MENU') { showItemSelectionMenu(); return; }
                 if (input === 'Done Ordering') {
                     if (orderData.orderItems.length === 0) {
-                        // If they press Done Ordering but cart is empty, redirect them to select items
                         appendMessage("Your order is empty. Please select items first.", false);
                         return;
                     } else {
@@ -654,7 +668,6 @@
                     return;
                 }
 
-                // Internal commands for modal interaction
                 if (messageText.startsWith('NAME_SUBMIT:')) {
                     orderData.name = messageText.substring('NAME_SUBMIT:'.length);
                     appendMessage(`Thank you, ${orderData.name}! Now provide your 10-digit mobile number.`, false, ["Enter Mobile Number"]);
@@ -668,7 +681,6 @@
                     return;
                 }
 
-                // State-specific logic
                 switch (currentState) {
                     case STATES.WELCOME:
                         await handleSystemResponse('Start');
@@ -686,11 +698,9 @@
                             const itemDisplayName = selectedItem.name.split(' / ')[0].trim();
                             const unit = selectedItem.unit.includes('Litre') ? 'Litres' : 'Kgs';
                             const quantityPresets = selectedItem.isLiquid ? LIQUID_PRESETS : SOLID_PRESETS;
-                            // Show quantity quick replies in the chat bubble
                             appendMessage(`How many ${unit} of ${itemDisplayName}? Select quantity or type a custom amount.`, false, quantityPresets);
                             updateState(STATES.SELECTING_ITEM_QTY);
                         } else {
-                            // If user types random text, show the main selection menu again
                             showItemSelectionMenu();
                         }
                         break;
@@ -722,8 +732,8 @@
                         tempSelectedItem = null;
                         updateItemCounter();
                         appendMessage(`Added ${quantity}${selectedItemDetails.unit} of ${selectedItemDetails.name.split(' / ')[0].trim()} to your order.`, false);
-                        showItemSelectionMenu(); // Show the main menu or 'Done Ordering' options
-                        
+                        showItemSelectionMenu();
+
                         break;
                     }
 
@@ -773,7 +783,6 @@
             uiDisplayMessage = uiDisplayMessage || messageText;
             if (!messageText) { return; }
 
-            // clear input for typed messages
             MESSAGE_INPUT.value = '';
             appendMessage(uiDisplayMessage, true);
 
@@ -787,6 +796,7 @@
             MESSAGE_INPUT = document.getElementById('message-input');
             SEND_BUTTON = document.getElementById('send-button');
             PRESET_BUTTON = document.getElementById('preset-button');
+            FLOATING_PRESET = document.getElementById('floating-preset');
             BOT_STATUS = document.getElementById('bot-status');
             ITEM_COUNTER = document.getElementById('item-counter');
             NAME_MODAL = document.getElementById('name-modal');
@@ -814,9 +824,10 @@
 
             // Set initial state for button and start conversation
             updateState(STATES.WELCOME);
-            handleSystemResponse('Start'); 
+            handleSystemResponse('Start');
             toggleInputInteraction(false);
 
+            // adapt visibility on resize
             window.onresize = () => toggleInputInteraction(SEND_BUTTON.disabled);
         });
     </script>
