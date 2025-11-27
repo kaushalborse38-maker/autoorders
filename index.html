@@ -25,7 +25,7 @@
     </script>
 
     <style>
-        /* ---------- Layout fixes: Fixed Viewport Height and Overflow Control ---------- */
+        /* ---------- Layout fixes: Fixed Viewport Height and Overflow Control (reduced gaps) ---------- */
         html, body {
             margin: 0;
             padding: 0;
@@ -42,6 +42,8 @@
             width: 100%;
             display: flex;
             flex-direction: column;
+            /* reduce any extra outer gap */
+            padding: 0;
         }
 
         #chat-window {
@@ -51,22 +53,24 @@
             background: white;
             min-height: 0; /* allows children to scroll correctly */
             position: relative; /* for floating preset button */
+            border-radius: 0.5rem; /* slightly smaller radius to reduce perceived gap */
         }
 
+        /* smaller margins for larger screens so gap is less obvious */
         @media (min-width: 768px) {
             #app {
                 height: 95vh;
                 max-width: 600px;
-                border-radius: 1rem;
-                margin: 20px auto;
-                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                border-radius: 0.5rem;
+                margin: 8px auto; /* reduced from 20px */
+                box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.18);
             }
-            #chat-window { border-radius: 1rem; }
+            #chat-window { border-radius: 0.5rem; }
             #message-input { font-size: 16px; }
         }
 
         #chat-header {
-            padding: 12px 12px;
+            padding: 10px 10px;
             background: #075E54;
             color: #fff;
             display: flex;
@@ -87,8 +91,8 @@
             align-items: stretch;
             overflow-y: auto;
             background-color: #E5DDD5;
-            padding: 16px;
-            padding-bottom: calc(16px + 120px); /* leave space for floating preset + input bar */
+            padding: 8px; /* reduced from 16px */
+            padding-bottom: calc(8px + 88px); /* leave space for floating preset + input bar, reduced */
             min-height: 0; /* important for flex children to allow scrolling */
         }
 
@@ -107,8 +111,8 @@
 
         .message-wrapper { margin: 0; display:flex; width: 100%; }
         .message-bubble {
-            padding: 12px 14px;
-            border-radius: 12px;
+            padding: 10px 12px; /* slightly smaller padding to reduce bubble-to-edge gap */
+            border-radius: 10px;
             max-width: 88%;
             box-shadow: 0 6px 14px rgba(0,0,0,0.06);
             line-height: 1.45;
@@ -146,7 +150,7 @@
 
         /* input area */
         #input-bar {
-            padding: 10px;
+            padding: 8px;
             background: #f5f5f5;
             display:flex;
             align-items:center;
@@ -158,7 +162,7 @@
         }
         #message-input {
             flex:1;
-            padding: 12px 14px;
+            padding: 10px 12px;
             border-radius: 999px;
             border:none;
             box-shadow: 0 6px 18px rgba(0,0,0,0.08);
@@ -171,13 +175,13 @@
         /* Floating preset button (moved above input) */
         #floating-preset {
             position: absolute;
-            left: 14px;
-            bottom: 72px; /* sits slightly above input bar */
+            left: 12px;
+            bottom: 66px; /* reduced to bring it closer to input bar */
             z-index: 40;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 10px 14px;
+            padding: 9px 12px;
             border-radius: 999px;
             background: #333333;
             color: white;
