@@ -3,28 +3,10 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>WhatsApp Order System - AutoScroll</title>
+  <title>WhatsApp Order System - AutoScroll (User-send only)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'whatsapp-dark': '#075E54',
-            'whatsapp-light': '#25D366',
-            'chat-bg-pattern': '#E5DDD5',
-            'bubble-sent': '#DCF8C6',
-            'bubble-received': '#FFFFFF',
-            'preset-bg': '#333333',
-          },
-          fontFamily: { sans: ['Inter', 'sans-serif'] }
-        }
-      }
-    }
-  </script>
   <style>
-    /* allow page scroll (we rely on window scroll for auto-scroll) */
     html,body{margin:0;padding:0;height:100%;width:100%;box-sizing:border-box;background:#DADBD3;font-family:Inter, sans-serif;overflow:auto;}
     #app{min-height:100vh;display:flex;flex-direction:column;}
     #chat-window{display:flex;flex-direction:column;background:#fff;min-height:0;}
@@ -89,7 +71,7 @@
     </div>
   </div>
 
-  <!-- dialogs unchanged -->
+  <!-- dialogs (same) -->
   <dialog id="name-modal"> <h2 class="text-2xl font-extrabold mb-4 text-whatsapp-dark">👤 Enter Your Name</h2> <input type="text" id="customer-name-input" class="w-full p-3 border-2 rounded-xl" placeholder="Your Full Name"> <div class="flex justify-end space-x-3 mt-6"><button onclick="document.getElementById('name-modal').close()" class="px-5 py-2 bg-gray-200 rounded-full">Cancel</button> <button onclick="handleNameSubmit()" class="px-5 py-2 bg-whatsapp-light text-white rounded-full">Submit</button></div></dialog>
 
   <dialog id="mobile-modal"> <h2 class="text-2xl font-extrabold mb-4 text-whatsapp-dark">📞 Enter Mobile Number</h2> <input type="tel" id="customer-mobile-input" maxlength="10" class="w-full p-3 border-2 rounded-xl" placeholder="10-digit Mobile Number"> <div class="flex justify-end space-x-3 mt-6"><button onclick="document.getElementById('mobile-modal').close()" class="px-5 py-2 bg-gray-200 rounded-full">Cancel</button> <button onclick="handleMobileSubmit()" class="px-5 py-2 bg-whatsapp-light text-white rounded-full">Submit</button></div></dialog>
@@ -97,7 +79,7 @@
   <dialog id="download-modal"><h2 class="text-2xl font-extrabold mb-4 text-whatsapp-dark">📱 Installation Help</h2><div class="mb-4 text-gray-700"><p class="mb-2 font-semibold">To get a direct link or prompt to download our app:</p><p>1. On Android/Chrome: Tap the three dots menu (⋮) in your browser.</p><p>2. On iOS/Safari: Tap the Share button.</p><p>Then, select "Add to Home Screen" or "Install App".</p></div><div class="flex justify-end mt-6"><button onclick="document.getElementById('download-modal').close()" class="px-4 py-2 bg-gray-200 rounded-full">Close</button></div></dialog>
 
   <script>
-    // -------- configs & state (unchanged) --------
+    // Config/state
     const WEBHOOK_URL = "https://borsekaushal.app.n8n.cloud/webhook/order-system-webhook";
     const REQUEST_TIMEOUT_MS = 25000;
     const SECRET_HEADER_VALUE = "";
@@ -124,60 +106,33 @@
     let typingIndicatorElement = null;
     let tempSelectedItem = null;
 
-    // ---------- Auto-scroll logic ----------
-    // If user is near bottom, autoScrollEnabled = true => new messages will scroll to bottom.
-    // If user scrolled up, autoScrollEnabled becomes false so we don't steal their scroll.
+    // Auto-scroll logic (still present but only used on user-send)
     let autoScrollEnabled = true;
-    const AUTO_SCROLL_THRESHOLD = 120; // px from bottom considered "at bottom"
-
+    const AUTO_SCROLL_THRESHOLD = 120;
     function isUserNearBottom() {
-      // distance from bottom of page
       const distanceFromBottom = document.body.scrollHeight - (window.innerHeight + window.scrollY);
       return distanceFromBottom <= AUTO_SCROLL_THRESHOLD;
     }
-
-    // Call this to scroll to bottom (use smooth animation)
     function scrollToBottom(smooth = true) {
-      try {
-        window.scrollTo({ top: document.body.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
-      } catch (e) {
-        // fallback for older browsers
-        window.scrollTo(0, document.body.scrollHeight);
-      }
+      try { window.scrollTo({ top: document.body.scrollHeight, behavior: smooth ? 'smooth' : 'auto' }); }
+      catch (e) { window.scrollTo(0, document.body.scrollHeight); }
     }
+    window.addEventListener('scroll', () => { autoScrollEnabled = isUserNearBottom(); }, { passive: true });
+    function autoScrollIfNeeded(force = false) { if (force || autoScrollEnabled) scrollToBottom(true); }
 
-    // When user manually scrolls, update autoScrollEnabled flag
-    window.addEventListener('scroll', () => {
-      autoScrollEnabled = isUserNearBottom();
-    }, { passive: true });
-
-    // Utility: if auto-scroll is enabled, scroll after new message; otherwise do nothing.
-    function autoScrollIfNeeded(force = false) {
-      if (force || autoScrollEnabled) scrollToBottom(true);
-    }
-
-    // ---------- helpers & UI functions ----------
+    // Utilities
     function toggleInputInteraction(isDisabled) {
       SEND_BUTTON.disabled = isDisabled;
       MESSAGE_INPUT.disabled = isDisabled;
       MESSAGE_INPUT.classList.toggle('opacity-60', isDisabled);
       SEND_BUTTON.classList.toggle('opacity-60', isDisabled);
-
       const keyboardStates = [STATES.ASK_NAME, STATES.ASK_MOBILE, STATES.ASK_ADDRESS];
-      if (keyboardStates.includes(currentState)) {
-        MESSAGE_INPUT.readOnly = false;
-        MESSAGE_INPUT.placeholder = "Type your response...";
-      } else {
-        MESSAGE_INPUT.readOnly = true;
-        MESSAGE_INPUT.placeholder = "Use buttons to select options";
-      }
-
+      if (keyboardStates.includes(currentState)) { MESSAGE_INPUT.readOnly = false; MESSAGE_INPUT.placeholder = "Type your response..."; }
+      else { MESSAGE_INPUT.readOnly = true; MESSAGE_INPUT.placeholder = "Use buttons to select options"; }
       const isMobile = window.innerWidth < 768;
       const addressStates = [STATES.ASK_NAME, STATES.ASK_MOBILE, STATES.ASK_ADDRESS];
       const shouldShowPreset = isMobile || (!isDisabled && currentState !== STATES.SELECTING_ITEM_QTY && !addressStates.includes(currentState));
-      if (shouldShowPreset) { PRESET_BUTTON.classList.remove('hidden'); PRESET_BUTTON.classList.add('flex'); }
-      else { PRESET_BUTTON.classList.add('hidden'); PRESET_BUTTON.classList.remove('flex'); }
-
+      if (shouldShowPreset) { PRESET_BUTTON.classList.remove('hidden'); PRESET_BUTTON.classList.add('flex'); } else { PRESET_BUTTON.classList.add('hidden'); PRESET_BUTTON.classList.remove('flex'); }
       if (!isDisabled && !NAME_MODAL.open && !MOBILE_MODAL.open && keyboardStates.includes(currentState)) MESSAGE_INPUT.focus();
     }
 
@@ -208,13 +163,12 @@
       if (message === 'Enter Name') { openNameModal(); DROPDOWN_MENU.classList.add('hidden'); return; }
       if (message === 'Enter Mobile Number') { openMobileModal(); DROPDOWN_MENU.classList.add('hidden'); return; }
       if (message === 'Enter Address') { MESSAGE_INPUT.readOnly = false; MESSAGE_INPUT.focus(); DROPDOWN_MENU.classList.add('hidden'); return; }
-      MESSAGE_INPUT.value = message; sendMessage();
-      DROPDOWN_MENU.classList.add('hidden');
+      MESSAGE_INPUT.value = message; sendMessage(); DROPDOWN_MENU.classList.add('hidden');
     }
 
     function escapeHtml(unsafe) { return unsafe.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 
-    // appendMessage now uses autoScrollIfNeeded() instead of unconditionally forcing scroll
+    // appendMessage: NO auto-scroll for system/bot messages
     function appendMessage(text, isSent, quickReplies = []) {
       const time = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
       const wrapper = document.createElement('div'); wrapper.className = 'message-wrapper ' + (isSent ? 'justify-end' : 'justify-start');
@@ -238,8 +192,8 @@
       wrapper.appendChild(bubble);
       MESSAGES_COLUMN.appendChild(wrapper);
 
-      // Auto-scroll only if user is at bottom (or force true)
-      autoScrollIfNeeded();
+      // IMPORTANT: Do NOT auto-scroll here for system/bot messages.
+      // Auto-scroll happens only when user sends message (sendMessage calls autoScrollIfNeeded(true))
     }
 
     function showTypingIndicator() {
@@ -253,13 +207,12 @@
       wrapper.appendChild(bubble);
       MESSAGES_COLUMN.appendChild(wrapper);
       typingIndicatorElement = wrapper;
-
-      autoScrollIfNeeded();
+      // no auto-scroll for typing indicator
     }
 
     function removeTypingIndicator() { const indicator = document.getElementById('typing-indicator'); if (indicator) { indicator.remove(); typingIndicatorElement = null; } }
 
-    // Webhook sender (unchanged)
+    // Webhook sender (unchanged behavior - it appends messages but won't auto-scroll)
     async function sendOrderToWebhook(data) {
       appendMessage("Saving order to backend...", false);
       const controller = new AbortController();
@@ -285,7 +238,7 @@
       }
     }
 
-    // Business logic (kept same as before)...
+    // Business logic (unchanged)
     function getMenuText() {
       let menu = "नमस्ते! Welcome. Here is the current rate list:\n\n";
       MENU.forEach(item => { menu += `• ${item.name} - ${item.price} Rs/${item.unit}\n`; });
@@ -293,7 +246,6 @@
       menu += "\nClick the *Select Items* button below to choose what you need.";
       return menu;
     }
-
     function generateSummary(data) {
       let summary = "🎉 *Order Confirmation* 🎉\n\n";
       summary += "*Customer Details:*\n";
@@ -322,22 +274,16 @@
     }
 
     function openNameModal() { toggleInputInteraction(true); CUSTOMER_NAME_INPUT.value = orderData.name || ''; NAME_MODAL.showModal(); }
-    function handleNameSubmit() {
-      const name = CUSTOMER_NAME_INPUT.value.trim(); if (name.length < 3) { console.warn("Name too short!"); return; }
-      NAME_MODAL.close(); toggleInputInteraction(false); sendMessage('NAME_SUBMIT:' + name, name);
-    }
+    function handleNameSubmit() { const name = CUSTOMER_NAME_INPUT.value.trim(); if (name.length < 3) { console.warn("Name too short!"); return; } NAME_MODAL.close(); toggleInputInteraction(false); sendMessage('NAME_SUBMIT:' + name, name); }
     function openMobileModal() { toggleInputInteraction(true); CUSTOMER_MOBILE_INPUT.value = orderData.mobile || ''; MOBILE_MODAL.showModal(); }
-    function handleMobileSubmit() {
-      const mobile = CUSTOMER_MOBILE_INPUT.value.trim(); if (!/^\d{10}$/.test(mobile)) { console.warn("Invalid mobile number"); return; }
-      MOBILE_MODAL.close(); toggleInputInteraction(false); sendMessage('MOBILE_SUBMIT:' + mobile, mobile);
-    }
+    function handleMobileSubmit() { const mobile = CUSTOMER_MOBILE_INPUT.value.trim(); if (!/^\d{10}$/.test(mobile)) { console.warn("Invalid mobile number"); return; } MOBILE_MODAL.close(); toggleInputInteraction(false); sendMessage('MOBILE_SUBMIT:' + mobile, mobile); }
 
     function toggleDropdown() { DROPDOWN_MENU.classList.toggle('hidden'); }
     function downloadApp() { DROPDOWN_MENU.classList.add('hidden'); document.getElementById('download-modal').showModal(); }
     function showHelp() { appendMessage("💡 Help: You can order up to 5 unique items. Select items from the menu, specify quantities, and provide your details to complete the order. Use 'Done Ordering' when finished.", false); DROPDOWN_MENU.classList.add('hidden'); }
     function resetOrder() { orderData = { orderItems: [], name: '', mobile: '', address: '' }; updateItemCounter(); appendMessage("🔄 Order has been completely reset. Starting fresh...", false); handleSystemResponse('Start'); DROPDOWN_MENU.classList.add('hidden'); }
 
-    // Core handler (unchanged logically)
+    // CORE state handler (unchanged)
     async function handleSystemResponse(messageText) {
       toggleInputInteraction(true); showTypingIndicator();
       try {
@@ -403,14 +349,14 @@
       }
     }
 
-    // sendMessage
+    // sendMessage: FORCE scroll when user sends a message
     async function sendMessage(messageText, uiDisplayMessage) {
       messageText = messageText || MESSAGE_INPUT.value.trim();
       uiDisplayMessage = uiDisplayMessage || messageText;
       if (!messageText) return;
       MESSAGE_INPUT.value = '';
       appendMessage(uiDisplayMessage, true);
-      // Force scroll to bottom when user sends a message (common behaviour)
+      // Force scroll to bottom when user sends a message (only here)
       autoScrollIfNeeded(true);
       await handleSystemResponse(messageText);
     }
@@ -442,7 +388,6 @@
       MENU_BUTTON.addEventListener('click', toggleDropdown);
       document.addEventListener('click', (event) => { if (!MENU_BUTTON.contains(event.target) && !DROPDOWN_MENU.contains(event.target)) DROPDOWN_MENU.classList.add('hidden'); });
 
-      // initialize state
       updateState(STATES.WELCOME);
       handleSystemResponse('Start');
       toggleInputInteraction(false);
