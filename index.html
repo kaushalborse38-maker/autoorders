@@ -121,7 +121,7 @@
         }
         .bubble-meta svg { width: 14px; height: 14px; }
 
-        /* quick replies */
+        /* quick replies container */
         .quick-reply-container { margin-top: 8px; display:flex; flex-wrap:wrap; gap:8px; }
         .quick-reply-button {
             padding: 8px 14px;
@@ -132,8 +132,17 @@
             font-weight:500;
             color:#128C7E;
             white-space:nowrap;
+            transition: background-color 0.1s;
         }
-        .done-ordering-button { background-color:#25D366 !important; color:#fff !important; border-color:#075E54 !important; font-weight:700; }
+        .quick-reply-button:hover {
+            background: #E8E8E8;
+        }
+        .done-ordering-button { 
+            background-color:#25D366 !important; 
+            color:#fff !important; 
+            border-color:#075E54 !important; 
+            font-weight:700; 
+        }
 
         /* input area */
         #input-bar {
@@ -217,6 +226,7 @@
 
             <!-- Input Bar (fixed) -->
             <div id="input-bar">
+                <!-- PRESET BUTTON: Shows 'Start Order' or 'Select Items' -->
                 <button id="preset-button" title="Quick Action"
                         class="preset-btn flex-shrink-0 p-2 text-sm font-semibold text-white bg-preset-bg hover:bg-black/80 rounded-full transition duration-150 shadow-md items-center justify-center h-10 transform hover:scale-[1.02] whitespace-nowrap">
                     Select Items
@@ -770,7 +780,7 @@
             // expose functions
             window.handleNameSubmit = handleNameSubmit;
             window.handleMobileSubmit = handleMobileSubmit;
-            window.sendMessage = sendMessage;a
+            window.sendMessage = sendMessage;
             window.usePreset = usePreset;
             window.downloadApp = downloadApp;
             window.showHelp = showHelp;
