@@ -26,6 +26,7 @@
 
     <style>
         /* ---------- Layout fixes: Fixed Viewport Height and Overflow Control ---------- */
+        /* Ensures the whole screen does not scroll, maintaining fixed header and input bar */
         html, body {
             margin: 0;
             padding: 0;
@@ -37,9 +38,9 @@
             background-color: #DADBD3;
         }
 
-        /* Keep #app centered on large screens, and ensure it uses the full fixed height */
+        /* Ensures the app container uses the full fixed height */
         #app {
-            height: 100vh; /* Ensures it matches body height */
+            height: 100vh; 
             width: 100%;
             display: flex;
             flex-direction: column;
@@ -66,7 +67,7 @@
             #message-input { font-size: 16px; }
         }
 
-        /* Header: make it sticky at top of chat-window and remove manual margin hacks */
+        /* Header: fixed at top of chat-window */
         #chat-header {
             padding: 12px 12px;
             background: #075E54;
@@ -80,7 +81,7 @@
             box-shadow: 0 6px 18px rgba(0,0,0,0.12);
         }
 
-        /* Messages container - THIS is the only scrollable area */
+        /* Messages container - THIS is the only scrollable area (internal scrolling) */
         #messages-container {
             flex: 1;
             overflow-y: auto;
@@ -168,10 +169,9 @@
     </style>
 </head>
 <body>
-    <!-- Added h-screen class (Tailwind for height: 100vh) to match the CSS fix -->
     <div id="app" class="w-full h-screen md:max-w-3xl md:rounded-xl overflow-hidden">
         <div id="chat-window" class="flex-grow w-full flex flex-col">
-            <!-- Header (sticky) -->
+            <!-- Header (fixed) -->
             <div id="chat-header">
                 <div class="flex items-center min-w-0 flex-1">
                     <div class="w-10 h-10 rounded-full bg-whatsapp-light flex items-center justify-center font-semibold text-lg mr-3 shadow-md flex-shrink-0">
@@ -210,12 +210,12 @@
                 </div>
             </div>
 
-            <!-- Messages (This container scrolls internally) -->
+            <!-- Messages (This container scrolls internally and auto-scrolls to bottom) -->
             <div id="messages-container">
                 <div id="messages-column" class="flex flex-col"></div>
             </div>
 
-            <!-- Input Bar -->
+            <!-- Input Bar (fixed) -->
             <div id="input-bar">
                 <button id="preset-button" title="Quick Action"
                         class="preset-btn flex-shrink-0 p-2 text-sm font-semibold text-white bg-preset-bg hover:bg-black/80 rounded-full transition duration-150 shadow-md items-center justify-center h-10 transform hover:scale-[1.02] whitespace-nowrap">
@@ -303,7 +303,7 @@
         let typingIndicatorElement = null;
         let tempSelectedItem = null;
 
-        // ---------- UTILITIES (unchanged logic) ----------
+        // ---------- UTILITIES ----------
         function toggleInputInteraction(isDisabled) {
             SEND_BUTTON.disabled = isDisabled;
             MESSAGE_INPUT.disabled = isDisabled;
@@ -391,7 +391,10 @@
             return unsafe.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
         }
 
-        // Append message and reliably scroll the container to bottom
+        /**
+         * Appends a message and auto-scrolls to the bottom.
+         * This is the core function that ensures new chats are always visible.
+         */
         function appendMessage(text, isSent, quickReplies = []) {
             const time = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
@@ -422,7 +425,8 @@
             wrapper.appendChild(bubble);
             MESSAGES_COLUMN.appendChild(wrapper);
 
-            // Scroll messages container to bottom (robust)
+            // ******* CRITICAL FOR NO MANUAL SCROLLING *******
+            // Scrolls the messages container to the bottom to show the latest message
             MESSAGES_CONTAINER.scrollTop = MESSAGES_CONTAINER.scrollHeight;
         }
 
@@ -583,7 +587,7 @@
             DROPDOWN_MENU.classList.add('hidden');
         }
 
-        // CORE state handler (kept intact, minor calls to scroll handled by appendMessage)
+        // CORE state handler (kept intact)
         async function handleSystemResponse(messageText) {
             toggleInputInteraction(true);
             showTypingIndicator();
@@ -766,7 +770,7 @@
             // expose functions
             window.handleNameSubmit = handleNameSubmit;
             window.handleMobileSubmit = handleMobileSubmit;
-            window.sendMessage = sendMessage;
+            window.sendMessage = sendMessage;a
             window.usePreset = usePreset;
             window.downloadApp = downloadApp;
             window.showHelp = showHelp;
