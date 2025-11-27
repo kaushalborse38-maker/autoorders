@@ -69,6 +69,7 @@
         .chat-messages {
             background-color: #E5DDD5;
             overflow-y: auto;
+            flex: 1;
         }
         .chat-messages::-webkit-scrollbar { width: 6px; }
         .chat-messages::-webkit-scrollbar-thumb { background-color: #a8a8a8; border-radius: 3px; }
@@ -177,8 +178,8 @@
 
     <div id="app" class="flex w-full md:max-w-3xl md:rounded-xl md:shadow-2xl overflow-hidden">
         <div id="chat-window" class="flex-grow w-full flex flex-col bg-white rounded-xl shadow-xl">
-            <!-- Header -->
-            <div class="p-3 bg-whatsapp-dark text-white shadow-lg flex items-center justify-between rounded-t-xl relative">
+            <!-- Header - Always Visible -->
+            <div class="p-3 bg-whatsapp-dark text-white shadow-lg flex items-center justify-between rounded-t-xl relative flex-shrink-0">
                 <div class="flex items-center min-w-0 flex-1">
                     <div class="w-10 h-10 rounded-full bg-whatsapp-light flex items-center justify-center font-semibold text-lg mr-3 shadow-md flex-shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
@@ -217,19 +218,20 @@
             </div>
 
             <!-- Messages -->
-            <div id="messages-container" class="flex-grow p-4 chat-messages">
+            <div id="messages-container" class="p-4 chat-messages">
                 <div class="flex flex-col space-y-2"></div>
             </div>
 
             <!-- Input Bar -->
-            <div class="p-2 bg-gray-100 flex items-center border-t border-gray-200">
+            <div class="p-2 bg-gray-100 flex items-center border-t border-gray-200 flex-shrink-0">
                 <button id="preset-button" title="Quick Action"
                         class="flex-shrink-0 mr-2 p-2 text-sm font-semibold text-white bg-preset-bg hover:bg-black/80 rounded-full transition duration-150 shadow-md items-center justify-center h-10 transform hover:scale-[1.02] whitespace-nowrap">
                     Let's Start!
                 </button>
 
                 <input id="message-input" type="text" placeholder="Type a message..."
-                      class="flex-grow p-3 rounded-full border-none bg-white shadow-lg focus:outline-none focus:ring-2 focus:ring-whatsapp-dark transition-all duration-150 min-w-0">
+                      class="flex-grow p-3 rounded-full border-none bg-white shadow-lg focus:outline-none focus:ring-2 focus:ring-whatsapp-dark transition-all duration-150 min-w-0"
+                      readonly>
 
                 <button id="send-button" onclick="sendMessage()"
                         class="flex-shrink-0 ml-2 bg-whatsapp-light hover:bg-whatsapp-dark text-white p-3 rounded-full transition duration-150 transform hover:scale-105 shadow-xl w-12 h-12 flex items-center justify-center">
@@ -324,6 +326,18 @@
             MESSAGE_INPUT.classList.toggle('opacity-60', isDisabled);
             SEND_BUTTON.classList.toggle('opacity-60', isDisabled);
             
+            // Control keyboard activation based on state
+            const keyboardStates = [STATES.ASK_NAME, STATES.ASK_MOBILE, STATES.ASK_ADDRESS];
+            if (keyboardStates.includes(currentState)) {
+                // Enable keyboard for name, mobile, and address states
+                MESSAGE_INPUT.readOnly = false;
+                MESSAGE_INPUT.placeholder = "Type your response...";
+            } else {
+                // Disable keyboard for other states
+                MESSAGE_INPUT.readOnly = true;
+                MESSAGE_INPUT.placeholder = "Use buttons to select options";
+            }
+            
             // Always show preset button on mobile, conditionally on desktop
             const isMobile = window.innerWidth < 768;
             const addressStates = [STATES.ASK_NAME, STATES.ASK_MOBILE, STATES.ASK_ADDRESS];
@@ -339,7 +353,7 @@
                 PRESET_BUTTON.classList.remove('flex');
             }
             
-            if (!isDisabled && !NAME_MODAL.open && !MOBILE_MODAL.open) { 
+            if (!isDisabled && !NAME_MODAL.open && !MOBILE_MODAL.open && keyboardStates.includes(currentState)) { 
                 MESSAGE_INPUT.focus(); 
             }
         }
@@ -366,7 +380,6 @@
         function updatePresetButton() {
             let presetText = "Start Order";
             let presetAction = "Start";
-            MESSAGE_INPUT.placeholder = "Type your message...";
 
             PRESET_BUTTON.onclick = () => {
                 if (currentState === STATES.ORDERING) handleSystemResponse("VIEW_MENU");
@@ -374,22 +387,18 @@
             };
 
             if (currentState === STATES.WELCOME) {
-                presetText = "Start Order"; presetAction = "Start"; MESSAGE_INPUT.placeholder = "Click 'Start Order' to begin.";
+                presetText = "Start Order"; presetAction = "Start";
             } else if (currentState === STATES.ORDERING) {
-                presetText = "Select Items"; MESSAGE_INPUT.placeholder = "Select an item or type 'Done Ordering'";
+                presetText = "Select Items";
                 if (orderData.orderItems.length >= MAX_ITEMS) { presetText = "Done Ordering"; }
             } else if (currentState === STATES.SELECTING_ITEM_QTY) {
                 toggleInputInteraction(false); 
                 const details = MENU.find(i => i.id === tempSelectedItem);
                 const unit = details?.unit.includes('Litre') ? 'Litres' : 'Kgs';
-                MESSAGE_INPUT.placeholder = `Enter quantity in ${unit}...`;
                 return; 
             } else if (currentState === STATES.ASK_NAME) { 
-                MESSAGE_INPUT.placeholder = "Enter your full name..."; 
             } else if (currentState === STATES.ASK_MOBILE) { 
-                MESSAGE_INPUT.placeholder = "Enter your 10-digit mobile number..."; 
             } else if (currentState === STATES.ASK_ADDRESS) { 
-                MESSAGE_INPUT.placeholder = "Enter your full delivery address..."; 
             } else if (currentState === STATES.CONFIRMATION) { 
                 presetText = "Place New Order"; presetAction = "Start New Order"; 
             }
@@ -412,6 +421,7 @@
             }
             // Address doesn't use a modal, it requires manual typing/focus
             if (message === 'Enter Address') {
+                MESSAGE_INPUT.readOnly = false;
                 MESSAGE_INPUT.focus();
                 DROPDOWN_MENU.classList.add('hidden');
                 return;
@@ -419,7 +429,6 @@
             // -----------------------------------------------------------
 
             MESSAGE_INPUT.value = message;
-            MESSAGE_INPUT.focus();
             sendMessage();
              // Close dropdown if it was opened
             DROPDOWN_MENU.classList.add('hidden');
@@ -796,7 +805,7 @@
         async function sendMessage(messageText, uiDisplayMessage) {
             messageText = messageText || MESSAGE_INPUT.value.trim();
             uiDisplayMessage = uiDisplayMessage || messageText;
-            if (!messageText) { MESSAGE_INPUT.focus(); return; }
+            if (!messageText) { return; }
             
             MESSAGE_INPUT.value = '';
             appendMessage(uiDisplayMessage, true);
